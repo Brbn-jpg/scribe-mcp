@@ -144,20 +144,36 @@ export function buildDrawingLink(input: DrawingInput): BuiltDrawingLink {
     throw new LinkError(`The drawing has ${strokes.length} strokes and ${points} points; Scribe accepts ${MAX_DRAW_STROKES} and ${MAX_DRAW_POINTS}.`);
   }
 
+  const link = encodeDrawLink({ aspect, strokes, settings: input.settings, locale: input.locale, baseUrl: input.baseUrl });
+  if (link === null) {
+    throw new LinkError(`This drawing is too detailed for a link (limit ${MAX_RECIPE_LINK_CHARS} encoded characters). Use fewer or simpler paths.`);
+  }
+  return { url: link, aspect, strokes: strokes.length, points };
+}
+
+export interface DrawLinkInput {
+  aspect: Aspect;
+  /** pts flat [x0, y0, ...] in 0..DRAW_COORD_MAX of the artboard. */
+  strokes: { color: string; pts: number[] }[];
+  settings?: Record<string, unknown>;
+  locale?: Locale;
+  baseUrl?: string;
+  /** Link cap override for tests; defaults to the studio's MAX_RECIPE_LINK_CHARS. */
+  maxChars?: number;
+}
+
+/** Encodes a mode "draw" recipe link, or null when it would exceed the link cap. */
+export function encodeDrawLink(input: DrawLinkInput): string | null {
   const settings = Object.fromEntries(Object.entries(input.settings ?? {}).filter(([, value]) => value !== undefined));
   const payload = {
     v: RECIPE_LINK_VERSION,
     mode: "draw",
-    aspect,
-    strokes,
+    aspect: input.aspect,
+    strokes: input.strokes,
     ...(Object.keys(settings).length > 0 ? { settings } : {}),
   };
   const encoded = deflateRawSync(Buffer.from(JSON.stringify(payload), "utf8"), { level: 9 }).toString("base64url");
-  if (encoded.length > MAX_RECIPE_LINK_CHARS) {
-    throw new LinkError(
-      `This drawing is too detailed for a link (${encoded.length} encoded characters, limit ${MAX_RECIPE_LINK_CHARS}). Use fewer or simpler paths.`,
-    );
-  }
+  if (encoded.length > (input.maxChars ?? MAX_RECIPE_LINK_CHARS)) return null;
   const base = (input.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
-  return { url: `${base}${LOCALE_PATH_PREFIXES[input.locale ?? "en"]}/scribe#r=${encoded}`, aspect, strokes: strokes.length, points };
+  return `${base}${LOCALE_PATH_PREFIXES[input.locale ?? "en"]}/scribe#r=${encoded}`;
 }

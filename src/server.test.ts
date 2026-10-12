@@ -20,7 +20,7 @@ function text(result: Awaited<ReturnType<Client["callTool"]>>): string {
 test("lists the tools", async () => {
   const client = await connect();
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["scribe_create_drawing", "scribe_create_video", "scribe_limits"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["scribe_create_drawing", "scribe_create_video", "scribe_limits", "scribe_paint_image"]);
 });
 
 test("scribe_create_video returns a studio link and the export rules", async () => {
@@ -55,4 +55,22 @@ test("scribe_create_drawing returns a studio link", async () => {
   assert.notEqual(result.isError, true);
   assert.match(text(result), /https:\/\/example\.test\/scribe#r=/);
   assert.match(text(result), /Artboard: landscape, 1 stroke/);
+});
+
+test("scribe_paint_image paints a local file and reports missing ones", async () => {
+  const { mkdtempSync, writeFileSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { PNG } = await import("pngjs");
+  const png = new PNG({ width: 40, height: 30 });
+  for (let i = 0; i < 40 * 30; i++) png.data.set([i % 40 < 20 ? 220 : 30, 90, 60, 255], i * 4);
+  const file = join(mkdtempSync(join(tmpdir(), "scribe-srv-")), "two-tone.png");
+  writeFileSync(file, PNG.sync.write(png));
+  const client = await connect();
+  const ok = await client.callTool({ name: "scribe_paint_image", arguments: { imagePath: file, detail: "low" } });
+  assert.notEqual(ok.isError, true);
+  assert.match(text(ok), /https:\/\/example\.test\/scribe#r=/);
+  assert.match(text(ok), /nothing was uploaded/);
+  const missing = await client.callTool({ name: "scribe_paint_image", arguments: { imagePath: "/no/such/file.png" } });
+  assert.equal(missing.isError, true);
 });

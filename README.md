@@ -1,6 +1,6 @@
 # Todrawn Scribe MCP server
 
-An [MCP](https://modelcontextprotocol.io) server that lets an AI agent turn code, text or a line drawing into a [Todrawn Scribe](https://todrawn.com/scribe) project, a video of a pen writing or drawing it by hand.
+An [MCP](https://modelcontextprotocol.io) server that lets an AI agent turn code, text, a line drawing or a photo into a [Todrawn Scribe](https://todrawn.com/scribe) project, a video of a pen writing, drawing or painting it by hand.
 
 The agent gets back a link. Opening it loads the project into the Scribe studio, where you preview it and export the MP4. The whole project travels inside the link after `#`, so the server uploads nothing and needs no account or API key.
 
@@ -25,7 +25,7 @@ Claude Desktop, Cursor and other clients that read an `mcpServers` JSON block:
 }
 ```
 
-Then ask, for example: "Make a vertical Scribe video of the function I just wrote." or "Draw a lighthouse with Scribe."
+Then ask, for example: "Make a vertical Scribe video of the function I just wrote." or "Draw a lighthouse with Scribe." or "Paint ~/Pictures/dinner.jpg with Scribe."
 
 ## Tools
 
@@ -33,7 +33,12 @@ Then ask, for example: "Make a vertical Scribe video of the function I just wrot
 |---|---|
 | `scribe_create_video` | Takes `text` and optionally `language`, `aspect`, look and pacing settings and `locale`. Returns the studio link. |
 | `scribe_create_drawing` | Takes `paths` (SVG path data plus an optional ink colour each) and optionally `viewBox`, `aspect`, look settings and `locale`. Curves and arcs are flattened; the pen draws the paths in order. Returns the studio link. |
+| `scribe_paint_image` | Takes `imagePath` (a local PNG or JPEG) and optionally `aspect`, `detail` (low, medium, high), `pen`, `background`, `speedMultiplier` and `locale`. Paints the photo into up to ~2800 coloured strokes (an underpaint, then detail) and returns the studio link. |
 | `scribe_limits` | Lists input limits and what the Free and Premium plans allow. |
+
+## Privacy
+
+Photos are painted on your machine. The link holds only the pen strokes, after `#`, which browsers never send to a server, so neither the photo nor the painting is uploaded by this server.
 
 ## Plans
 

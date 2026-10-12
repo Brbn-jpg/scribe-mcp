@@ -22,10 +22,13 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "jpeg-js": "^0.4.4",
+    "pngjs": "^7.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pngjs": "^6.0.5",
     "typescript": "^5"
   },
   "homepage": "https://todrawn.com/scribe",
@@ -34,5 +37,13 @@
     "url": "git+https://github.com/Brbn-jpg/whiteboard.git",
     "directory": "mcp/scribe-mcp"
   },
-  "keywords": ["mcp", "model-context-protocol", "video", "code-to-video", "handwriting", "todrawn", "scribe"]
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "video",
+    "code-to-video",
+    "handwriting",
+    "todrawn",
+    "scribe"
+  ]
 }
