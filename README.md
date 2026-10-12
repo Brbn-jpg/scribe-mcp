@@ -1,6 +1,6 @@
 # Todrawn Scribe MCP server
 
-An [MCP](https://modelcontextprotocol.io) server that lets an AI agent turn code or text into a [Todrawn Scribe](https://todrawn.com/scribe) project, a video of a pen writing it out by hand.
+An [MCP](https://modelcontextprotocol.io) server that lets an AI agent turn code, text or a line drawing into a [Todrawn Scribe](https://todrawn.com/scribe) project, a video of a pen writing or drawing it by hand.
 
 The agent gets back a link. Opening it loads the project into the Scribe studio, where you preview it and export the MP4. The whole project travels inside the link after `#`, so the server uploads nothing and needs no account or API key.
 
@@ -25,13 +25,14 @@ Claude Desktop, Cursor and other clients that read an `mcpServers` JSON block:
 }
 ```
 
-Then ask, for example: "Make a vertical Scribe video of the function I just wrote."
+Then ask, for example: "Make a vertical Scribe video of the function I just wrote." or "Draw a lighthouse with Scribe."
 
 ## Tools
 
 | Tool | What it does |
 |---|---|
 | `scribe_create_video` | Takes `text` and optionally `language`, `aspect`, look and pacing settings and `locale`. Returns the studio link. |
+| `scribe_create_drawing` | Takes `paths` (SVG path data plus an optional ink colour each) and optionally `viewBox`, `aspect`, look settings and `locale`. Curves and arcs are flattened; the pen draws the paths in order. Returns the studio link. |
 | `scribe_limits` | Lists input limits and what the Free and Premium plans allow. |
 
 ## Plans

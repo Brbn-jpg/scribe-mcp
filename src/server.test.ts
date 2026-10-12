@@ -17,10 +17,10 @@ function text(result: Awaited<ReturnType<Client["callTool"]>>): string {
   return first?.text ?? "";
 }
 
-test("lists both tools", async () => {
+test("lists the tools", async () => {
   const client = await connect();
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["scribe_create_video", "scribe_limits"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), ["scribe_create_drawing", "scribe_create_video", "scribe_limits"]);
 });
 
 test("scribe_create_video returns a studio link and the export rules", async () => {
@@ -44,4 +44,15 @@ test("scribe_create_video reports bad input as a tool error", async () => {
 test("scribe_limits describes the plans", async () => {
   const client = await connect();
   assert.match(text(await client.callTool({ name: "scribe_limits", arguments: {} })), /Premium/);
+});
+
+test("scribe_create_drawing returns a studio link", async () => {
+  const client = await connect();
+  const result = await client.callTool({
+    name: "scribe_create_drawing",
+    arguments: { paths: [{ d: "M0 0 C 10 20 30 20 40 0", color: "violet" }], background: "paper" },
+  });
+  assert.notEqual(result.isError, true);
+  assert.match(text(result), /https:\/\/example\.test\/scribe#r=/);
+  assert.match(text(result), /Artboard: landscape, 1 stroke/);
 });

@@ -34,3 +34,13 @@ export const TIMINGS = ["reading", "pen"] as const;
 export const LAYOUTS = ["auto", "scroll", "pages"] as const;
 export const READING_WPS = { min: 1.5, max: 6, step: 0.5 } as const;
 export const SPEED = { min: 0.5, max: 2 } as const;
+
+/** Width/height of each artboard (lib/scribe/presets.ts paperForPreset). */
+export const ASPECT_RATIOS: Record<Aspect, number> = { landscape: 16 / 9, portrait: 9 / 16, square: 1, feed: 4 / 5 };
+/** Named ink colours that adapt to the background (lib/scribe/annotations.ts ANNOTATION_COLOR_KEYS); #rrggbb also works. */
+export const DRAW_COLOR_KEYS = ["blue", "red", "green", "violet", "amber"] as const;
+/** Draft caps (lib/scribe/recent-work.ts MAX_RECENT_TOTAL_POINTS / MAX_RECENT_STROKES). */
+export const MAX_DRAW_POINTS = 500_000;
+export const MAX_DRAW_STROKES = 50_000;
+/** Drawing link coordinates are integers in 0..DRAW_COORD_MAX across the artboard (lib/scribe/recipe-link.ts). */
+export const DRAW_COORD_MAX = 10_000;

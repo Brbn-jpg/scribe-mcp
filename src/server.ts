@@ -12,15 +12,18 @@ import {
   MAX_INPUT_BYTES,
   MAX_LINES,
   MAX_PLAYBACK_SECONDS,
+  DRAW_COLOR_KEYS,
   PENS,
   READING_WPS,
   RESOLUTIONS,
   SPEED,
   TIMINGS,
 } from "./constants.ts";
+import { buildDrawingLink } from "./drawing.ts";
 import { buildRecipeLink, LinkError, type LinkSettings } from "./link.ts";
 
 export const SERVER_VERSION = "0.1.0";
+const MAX_DRAWING_PATHS = 2000;
 
 const EXPORT_RULES =
   `Previewing is free and needs no account. Exporting the MP4 needs a free Todrawn account: ` +
@@ -34,6 +37,7 @@ const LIMITS_TEXT = [
   `- Output: ${RESOLUTIONS.join(" or ")}, ${FRAME_RATES.join(" or ")} fps, aspects ${ASPECTS.join(", ")} (feed = 4:5).`,
   `- Languages with syntax colours: ${LANGUAGES.filter((l) => l !== "plain").join(", ")}; "plain" draws prose and supports a Markdown subset (headings, **bold**, lists, ==highlight==).`,
   `- ${EXPORT_RULES}`,
+  `- Drawings: SVG path data, drawn as pen lines in path order (fills are ignored); inks ${DRAW_COLOR_KEYS.join(", ")} or #rrggbb.`,
   "- This server only builds links; the video is rendered and exported in the person's browser.",
 ].join("\n");
 
@@ -88,6 +92,38 @@ const SETTING_KEYS = [
   "fps",
 ] as const satisfies readonly (keyof LinkSettings)[];
 
+const localeSchema = createVideoShape.locale;
+
+const createDrawingShape = {
+  paths: z
+    .array(
+      z.object({
+        d: z.string().min(1).describe("SVG path data. Curves (C, Q, A) are fine; fills are ignored, every path is drawn as a pen line."),
+        color: z
+          .string()
+          .optional()
+          .describe(`Ink: ${DRAW_COLOR_KEYS.join(", ")} (adapt to the background) or #rrggbb. Defaults to blue.`),
+      }),
+    )
+    .min(1)
+    .max(MAX_DRAWING_PATHS)
+    .describe("Paths in the order a person would draw them; the pen follows that order. y grows downward, as in SVG."),
+  viewBox: z
+    .string()
+    .optional()
+    .describe('"minX minY width height" framing the drawing, as on an <svg>. Defaults to the paths\' bounding box with a margin.'),
+  aspect: z
+    .enum(ASPECTS)
+    .optional()
+    .describe("Artboard: landscape 16:9, portrait 9:16, square 1:1, feed 4:5. Defaults to the one closest to the drawing's shape."),
+  background: createVideoShape.background,
+  pen: createVideoShape.pen,
+  speedMultiplier: createVideoShape.speedMultiplier,
+  resolution: createVideoShape.resolution,
+  fps: createVideoShape.fps,
+  locale: localeSchema,
+};
+
 export function createScribeServer(options: { baseUrl?: string } = {}): McpServer {
   const server = new McpServer({ name: "todrawn-scribe", version: SERVER_VERSION });
 
@@ -127,6 +163,57 @@ export function createScribeServer(options: { baseUrl?: string } = {}): McpServe
                 "",
                 `Language: ${link.language}, ${link.lines} line${link.lines === 1 ? "" : "s"}. The whole project is inside the link after "#", so nothing was uploaded.`,
                 `Clips are capped at ${MAX_PLAYBACK_SECONDS} s; longer text is drawn faster to fit.`,
+                EXPORT_RULES,
+              ].join("\n"),
+            },
+          ],
+        };
+      } catch (error) {
+        if (error instanceof LinkError) {
+          return { isError: true, content: [{ type: "text" as const, text: error.message }] };
+        }
+        throw error;
+      }
+    },
+  );
+
+  server.registerTool(
+    "scribe_create_drawing",
+    {
+      title: "Create a Todrawn Scribe drawing video",
+      description:
+        "Turns a line drawing, given as SVG paths, into a Todrawn Scribe Draw project: a video of a pen drawing it stroke by stroke. " +
+        "Describe the subject as outlines and details, not filled shapes. " +
+        "Returns a link that opens the Scribe studio with the drawing loaded, where the person previews it and exports the MP4. " +
+        EXPORT_RULES,
+      inputSchema: createDrawingShape,
+      annotations: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
+    },
+    async (args) => {
+      try {
+        const link = buildDrawingLink({
+          paths: args.paths,
+          viewBox: args.viewBox,
+          aspect: args.aspect,
+          settings: {
+            background: args.background,
+            pen: args.pen,
+            speedMultiplier: args.speedMultiplier,
+            resolution: args.resolution,
+            fps: args.fps,
+          },
+          locale: args.locale,
+          baseUrl: options.baseUrl,
+        });
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: [
+                "Open this link to preview and export the drawing in Todrawn Scribe:",
+                link.url,
+                "",
+                `Artboard: ${link.aspect}, ${link.strokes} stroke${link.strokes === 1 ? "" : "s"}, ${link.points} points. The whole drawing is inside the link after "#", so nothing was uploaded.`,
                 EXPORT_RULES,
               ].join("\n"),
             },
