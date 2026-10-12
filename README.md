@@ -12,7 +12,19 @@ Claude Code:
 claude mcp add todrawn-scribe -- npx -y @todrawn/scribe-mcp
 ```
 
-Claude Desktop, Cursor and other clients that read an `mcpServers` JSON block:
+OpenAI Codex CLI:
+
+```bash
+codex mcp add todrawn-scribe -- npx -y @todrawn/scribe-mcp
+```
+
+VS Code (GitHub Copilot):
+
+```bash
+code --add-mcp '{"name":"todrawn-scribe","command":"npx","args":["-y","@todrawn/scribe-mcp"]}'
+```
+
+Claude Desktop (Settings > Developer > Edit Config), Cursor (`~/.cursor/mcp.json`), Gemini CLI (`~/.gemini/settings.json`) and other clients that read an `mcpServers` block:
 
 ```json
 {
@@ -24,6 +36,8 @@ Claude Desktop, Cursor and other clients that read an `mcpServers` JSON block:
   }
 }
 ```
+
+Any other MCP client runs the same stdio command: `npx -y @todrawn/scribe-mcp`. Needs Node.js 20 or newer.
 
 Then ask, for example: "Make a vertical Scribe video of the function I just wrote." or "Draw a lighthouse with Scribe." or "Paint ~/Pictures/dinner.jpg with Scribe."
 
