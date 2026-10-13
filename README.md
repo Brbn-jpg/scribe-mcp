@@ -69,7 +69,6 @@ Input is capped at 1 MiB and 5000 lines. Clips are capped at 180 s, and longer t
 npm install
 npm test          # node --test, runs the TypeScript sources directly (Node 22.6+)
 npm run build     # emits dist/
-TODRAWN_SCRIBE_URL=http://localhost:3000 node dist/index.js   # links point at a local frontend
 ```
 
 The constants in `src/constants.ts` mirror the studio. A contract test in the Todrawn app fails if they drift, and checks that every link this server builds opens in the studio.
