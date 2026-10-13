@@ -1,6 +1,6 @@
 {
   "name": "@todrawn/scribe-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for Todrawn Scribe: turn code or text into a handwriting video project your agent can hand you as a link.",
   "license": "MIT",
   "type": "module",
@@ -31,11 +31,13 @@
     "@types/pngjs": "^6.0.5",
     "typescript": "^5"
   },
-  "homepage": "https://todrawn.com/scribe",
+  "homepage": "https://todrawn.com/scribe/mcp",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Brbn-jpg/whiteboard.git",
-    "directory": "mcp/scribe-mcp"
+    "url": "git+https://github.com/Brbn-jpg/scribe-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Brbn-jpg/scribe-mcp/issues"
   },
   "keywords": [
     "mcp",

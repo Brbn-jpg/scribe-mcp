@@ -72,4 +72,12 @@ npm run build     # emits dist/
 TODRAWN_SCRIBE_URL=http://localhost:3000 node dist/index.js   # links point at a local frontend
 ```
 
-The constants in `src/constants.ts` mirror the studio. `frontend/src/lib/scribe/recipe-link-mcp.test.ts` fails if they drift, and checks that every link this server builds opens in the studio.
+The constants in `src/constants.ts` mirror the studio. A contract test in the Todrawn app fails if they drift, and checks that every link this server builds opens in the studio.
+
+## Source
+
+This repository is a read-only mirror of the package as it lives in the Todrawn monorepo, synced on every change. Issues are welcome here; pull requests are read and ported by hand.
+
+## License
+
+MIT
