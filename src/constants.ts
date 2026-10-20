@@ -25,6 +25,8 @@ export const FRAME_RATES = [24, 30] as const;
 /** Link format (lib/scribe/recipe-link.ts). */
 export const RECIPE_LINK_VERSION = 1;
 export const MAX_RECIPE_LINK_CHARS = 120_000;
+/** Cap on the inflated JSON the studio decodes (lib/scribe/recipe-link.ts, #470). */
+export const MAX_RECIPE_LINK_JSON_BYTES = MAX_INPUT_BYTES + 64 * 1024;
 
 /** Settings ranges a link may set (lib/scribe/settings.ts validateScribeSettings). */
 export const PENS = ["ballpoint", "marker", "fineliner", "pencil"] as const;

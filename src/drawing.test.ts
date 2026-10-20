@@ -44,3 +44,9 @@ test("rejects bad colours, paths and viewBoxes with the path number", () => {
   assert.throws(() => buildDrawingLink({ paths: [{ d: "M0 0 L1 1" }], viewBox: "0 0 0 10" }), /viewBox/);
   assert.throws(() => buildDrawingLink({ paths: [{ d: "M5 5" }] }), /nothing to draw/);
 });
+
+test("never emits non-finite coordinates (#470)", () => {
+  assert.throws(() => buildDrawingLink({ paths: [{ d: "M 1e999 0 L 1 1" }] }), /Path 1/);
+  // finite inputs whose arithmetic overflows must not become null either
+  assert.throws(() => buildDrawingLink({ paths: [{ d: "M 0 0 L 1e308 1e308 L -1e308 -1e308" }] }));
+});

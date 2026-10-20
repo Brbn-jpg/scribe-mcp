@@ -42,7 +42,10 @@ function tokenize(d: string): Token[] {
     }
     const match = NUMBER.exec(d.slice(i));
     if (!match) throw new PathError(`Unexpected "${ch}" at position ${i} in path data.`);
-    tokens.push({ num: Number(match[0]) });
+    const value = Number(match[0]);
+    // "1e999" parses to Infinity and would end up as null in the link (#470)
+    if (!Number.isFinite(value)) throw new PathError(`Number "${match[0]}" at position ${i} is out of range.`);
+    tokens.push({ num: value });
     argIndex++;
     i += match[0].length;
   }

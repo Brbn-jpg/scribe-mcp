@@ -8,6 +8,7 @@ import {
   MAX_INPUT_BYTES,
   MAX_LINES,
   MAX_RECIPE_LINK_CHARS,
+  MAX_RECIPE_LINK_JSON_BYTES,
   RECIPE_LINK_VERSION,
 } from "./constants.ts";
 
@@ -122,7 +123,15 @@ export function buildRecipeLink(input: LinkInput): BuiltLink {
     ...(input.aspect ? { aspect: input.aspect } : {}),
     ...(Object.keys(settings).length > 0 ? { settings } : {}),
   };
-  const encoded = deflateRawSync(Buffer.from(JSON.stringify(payload), "utf8"), { level: 9 }).toString("base64url");
+  const json = Buffer.from(JSON.stringify(payload), "utf8");
+  // quotes, backslashes and control characters grow when JSON-escaped; the
+  // studio refuses to inflate past its cap, so check the JSON, not the text (#470)
+  if (json.length > MAX_RECIPE_LINK_JSON_BYTES) {
+    throw new LinkError(
+      `The text is ${json.length} bytes once JSON-escaped; the Scribe link format accepts at most ${MAX_RECIPE_LINK_JSON_BYTES}. Shorten it or use fewer quotes and backslashes.`,
+    );
+  }
+  const encoded = deflateRawSync(json, { level: 9 }).toString("base64url");
   if (encoded.length > MAX_RECIPE_LINK_CHARS) {
     throw new LinkError(
       `This text is too large for a link (${encoded.length} encoded characters, limit ${MAX_RECIPE_LINK_CHARS}). Shorten it: a readable clip is a few dozen lines.`,

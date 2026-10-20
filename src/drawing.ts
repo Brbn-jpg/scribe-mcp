@@ -120,7 +120,12 @@ export function buildDrawingLink(input: DrawingInput): BuiltDrawingLink {
   const scale = Math.min((ratio * (1 - 2 * margin)) / content.w, (1 - 2 * margin) / content.h);
   const cx = content.x + content.w / 2;
   const cy = content.y + content.h / 2;
-  const toCoord = (value: number) => Math.min(DRAW_COORD_MAX, Math.max(0, Math.round(value * DRAW_COORD_MAX)));
+  const toCoord = (value: number) => {
+    // NaN/Infinity from overflowing arithmetic would serialise as null and the
+    // studio would reject the whole link (#470)
+    if (!Number.isFinite(value)) throw new LinkError("The drawing has coordinates that are out of range.");
+    return Math.min(DRAW_COORD_MAX, Math.max(0, Math.round(value * DRAW_COORD_MAX)));
+  };
 
   const strokes: { color: string; pts: number[] }[] = [];
   let points = 0;

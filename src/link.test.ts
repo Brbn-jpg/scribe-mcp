@@ -48,3 +48,10 @@ test("rejects text that does not fit in a link", () => {
   const noise = randomBytes(150_000).toString("base64").replace(/.{76}/g, "$&\n");
   assert.throws(() => buildRecipeLink({ text: noise }), /too large for a link/);
 });
+
+test("rejects text whose JSON form exceeds the studio's inflate cap (#470)", () => {
+  // every quote is escaped, so the JSON is ~2x the raw bytes: under the 1 MiB
+  // text cap but over the decoder's MAX_INPUT_BYTES + 64 KiB
+  const text = '"'.repeat(MAX_INPUT_BYTES - 10);
+  assert.throws(() => buildRecipeLink({ text }), LinkError);
+});

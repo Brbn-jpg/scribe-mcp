@@ -36,3 +36,7 @@ test("rejects malformed data with a readable message", () => {
   assert.throws(() => pathToPolylines("M0 0 L", 1), /missing arguments/);
   assert.throws(() => pathToPolylines("M0 0 X 5", 1), PathError);
 });
+
+test("rejects numbers that overflow to Infinity (#470)", () => {
+  assert.throws(() => pathToPolylines("M 1e999 0 L 1 1", 1), PathError);
+});
