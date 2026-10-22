@@ -24,8 +24,11 @@ import { buildDrawingLink } from "./drawing.ts";
 import { readImage } from "./image.ts";
 import { paintToLink } from "./paint.ts";
 import { buildRecipeLink, LinkError, type LinkSettings } from "./link.ts";
+import { AuthManager } from "./auth.ts";
+import { registerBoardTools, type BoardToolsDeps } from "./board-tools.ts";
+import { configFromEnv, TodrawnApi } from "./todrawn-api.ts";
 
-export const SERVER_VERSION = "0.1.0";
+export const SERVER_VERSION = "0.2.0";
 const MAX_DRAWING_PATHS = 2000;
 
 const EXPORT_RULES =
@@ -144,8 +147,14 @@ const paintImageShape = {
   locale: localeSchema,
 };
 
-export function createScribeServer(options: { baseUrl?: string } = {}): McpServer {
+function defaultBoardDeps(): BoardToolsDeps {
+  const api = new TodrawnApi(configFromEnv());
+  return { api, auth: new AuthManager({ api }) };
+}
+
+export function createScribeServer(options: { baseUrl?: string; board?: BoardToolsDeps } = {}): McpServer {
   const server = new McpServer({ name: "todrawn-scribe", version: SERVER_VERSION });
+  registerBoardTools(server, options.board ?? defaultBoardDeps());
 
   server.registerTool(
     "scribe_create_video",

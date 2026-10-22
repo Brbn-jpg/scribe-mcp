@@ -1,6 +1,6 @@
 {
   "name": "@todrawn/scribe-mcp",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "MCP server for Todrawn Scribe: turn code or text into a handwriting video project your agent can hand you as a link.",
   "license": "MIT",
   "type": "module",

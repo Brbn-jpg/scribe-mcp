@@ -20,7 +20,22 @@ function text(result: Awaited<ReturnType<Client["callTool"]>>): string {
 test("lists the tools", async () => {
   const client = await connect();
   const { tools } = await client.listTools();
-  assert.deepEqual(tools.map((t) => t.name).sort(), ["scribe_create_drawing", "scribe_create_video", "scribe_limits", "scribe_paint_image"]);
+  assert.deepEqual(tools.map((t) => t.name).sort(), [
+    "board_add",
+    "board_connect",
+    "board_create",
+    "board_delete",
+    "board_draw",
+    "board_list",
+    "board_read",
+    "board_update",
+    "scribe_create_drawing",
+    "scribe_create_video",
+    "scribe_limits",
+    "scribe_paint_image",
+    "todrawn_login",
+    "todrawn_logout",
+  ]);
 });
 
 test("scribe_create_video returns a studio link and the export rules", async () => {
