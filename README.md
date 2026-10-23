@@ -55,7 +55,7 @@ Then ask, for example: "Make a vertical Scribe video of the function I just wrot
 | `board_create` | Takes `title`. Creates an empty board and returns its id and URL. |
 | `board_read` | Takes `boardId` and `format` (`summary` or `full`). The summary lists each element with id, type, position, size, text, colours and connector ends, plus the content bounds and whether the board is live. |
 | `board_add` | Takes `boardId` and `elements`: rect, ellipse, poly, box, sticky, text, line, arrow, table or umlClass specs. Everything not given gets the board's normal defaults. |
-| `board_connect` | Takes `boardId` and `connections` between element ids (box, sticky, umlClass) or free points, with optional ports, relation, routing and label. |
+| `board_connect` | Takes `boardId` and `connections` between element ids (box, sticky, umlClass) or free points, with optional ports, relation and routing. A connector has no label; to caption one the agent adds a text element with `board_add`. |
 | `board_draw` | Takes `boardId`, `paths` (SVG path data) and optionally `x`, `y`, `width`. Draws them as freehand pen strokes. |
 | `board_update` | Takes `boardId` and `updates` (`id` plus the fields to change). |
 | `board_delete` | Takes `boardId` and `ids`. Attached connectors go with their elements. |
@@ -80,7 +80,7 @@ Environment variables:
 | `TODRAWN_API_URL` | API base URL, default `https://api.todrawn.com` (for example `http://localhost:8080`). |
 | `TODRAWN_APP_URL` | App base URL used for the login page and board links, default `https://todrawn.com`. |
 
-Boards use board units: x grows right, y grows down. Elements are built with the same defaults as the board UI (boxes and shapes 180 x 96, sticky notes 180 x 180, 18 px text, a contrasting ink on dark boards) and validated against the board's scene schema before they are sent; numbers must be finite and every rendered size at least 1 unit. Connectors attach only to box, sticky and umlClass elements; a connector label is added as a small text element at its midpoint. The Free plan allows 3 boards and the error says so when the limit is hit.
+Boards use board units: x grows right, y grows down. Elements are built with the same defaults as the board UI (boxes and shapes 180 x 96, sticky notes 180 x 180, 18 px text, a contrasting ink on dark boards) and validated against the board's scene schema before they are sent; numbers must be finite and every rendered size at least 1 unit. Connectors attach only to box, sticky and umlClass elements; a connector has no label field, so a caption is a separate text element added with `board_add`. The Free plan allows 3 boards and the error says so when the limit is hit.
 
 ## Privacy
 

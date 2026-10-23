@@ -117,6 +117,7 @@ export class AuthManager {
   private readonly now: () => number;
   private pendingLogin: PendingLogin | null = null;
   private failure: string | null = null;
+  private failureKind: "denied" | "expired" | null = null;
   private cancelled = false;
   /** Resolves when the background poll ends; exposed so tests can await it. */
   loginSettled: Promise<void> = Promise.resolve();
@@ -168,6 +169,15 @@ export class AuthManager {
     }
   }
 
+  /** The previous sign-in attempt's outcome as a sentence (only when it was denied or expired), cleared once read. */
+  takeFailure(): string | null {
+    const kind = this.failureKind;
+    this.failureKind = null;
+    if (kind === "denied") return "The previous sign-in request was denied.";
+    if (kind === "expired") return "The previous sign-in request expired before it was approved.";
+    return null;
+  }
+
   /** Starts the device flow and polls in the background; returns what the person must open. */
   async startLogin(clientName: string): Promise<PendingLogin> {
     const device = await this.api.request<DeviceCodeResponse>("POST", "/api/auth/mcp/device", {
@@ -181,6 +191,7 @@ export class AuthManager {
     };
     this.pendingLogin = pending;
     this.failure = null;
+    this.failureKind = null;
     this.cancelled = false;
     this.loginSettled = this.poll(device, pending).catch(() => undefined);
     return pending;
@@ -192,7 +203,7 @@ export class AuthManager {
       await this.sleep(intervalMs);
       if (this.cancelled || this.pendingLogin !== pending) return;
       if (this.now() >= pending.expiresAtMs) {
-        this.finish(pending, "The sign-in code expired before it was approved.");
+        this.finish(pending, "The sign-in code expired before it was approved.", "expired");
         return;
       }
       let result: PollResponse;
@@ -208,10 +219,10 @@ export class AuthManager {
           intervalMs += 5000;
           break;
         case "denied":
-          this.finish(pending, "The sign-in request was denied.");
+          this.finish(pending, "The sign-in request was denied.", "denied");
           return;
         case "expired":
-          this.finish(pending, "The sign-in code expired before it was approved.");
+          this.finish(pending, "The sign-in code expired before it was approved.", "expired");
           return;
         case "approved":
           this.store.write({ apiUrl: this.api.config.apiUrl, accessToken: result.accessToken, expiresAt: result.expiresAt });
@@ -221,9 +232,10 @@ export class AuthManager {
     }
   }
 
-  private finish(pending: PendingLogin, failure: string | null): void {
+  private finish(pending: PendingLogin, failure: string | null, kind: "denied" | "expired" | null = null): void {
     if (this.pendingLogin === pending) this.pendingLogin = null;
     this.failure = failure;
+    this.failureKind = kind;
   }
 
   /** Revokes the token on the server (a 401 means it is already gone) and forgets it locally. */
@@ -231,6 +243,7 @@ export class AuthManager {
     this.cancelled = true;
     this.pendingLogin = null;
     this.failure = null;
+    this.failureKind = null;
     const token = this.token();
     const usedEnvToken = Boolean(this.env.TODRAWN_TOKEN?.trim());
     let revoked = false;

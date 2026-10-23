@@ -173,7 +173,6 @@ const connectionSpec = z.object({
   to: endSpec.describe("Id of a box, sticky or umlClass, or a free point {x, y}."),
   fromPort: z.enum(PORTS).optional().describe("Side the connector leaves from. Default: the side facing the other node."),
   toPort: z.enum(PORTS).optional().describe("Side the connector arrives at. Default: the side facing the other node."),
-  label: z.string().max(200).optional().describe("Short caption, placed at the midpoint as a text element."),
   routing: z.enum(ROUTINGS).optional().describe("orthogonal (default, right-angle) or straight."),
   relation: z.enum(RELATIONS).optional().describe("association (default), inheritance, aggregation, composition or dependency; UML arrowheads."),
   stroke,
@@ -335,9 +334,11 @@ export function registerBoardTools(server: McpServer, deps: BoardToolsDeps): voi
         }
         const existing = deps.auth.pending;
         if (existing) return ok(loginInstructions(existing));
+        const previous = deps.auth.takeFailure();
         const pending = await deps.auth.startLogin(clientName());
         return ok(
           [
+            ...(previous ? [previous] : []),
             "Ask the person to open this link and approve the connection to their Todrawn account:",
             pending.verificationUriComplete,
             `Code: ${pending.userCode} (the page shows it too; only approve if it matches). The link works for ${Math.round((pending.expiresAtMs - Date.now()) / 60000)} minutes.`,
@@ -452,7 +453,7 @@ export function registerBoardTools(server: McpServer, deps: BoardToolsDeps): voi
       description:
         "Draws connectors between existing elements by id; they stay attached when the elements move. Connectors attach to box, sticky and umlClass elements only " +
         "(use an arrow element between other shapes, or give a free point {x, y} as an end). Ports default to the sides that face each other. " +
-        "relation gives UML arrowheads (inheritance, aggregation, composition, dependency). A label becomes a small text element at the midpoint. The board is read first to check the ids exist. " +
+        "relation gives UML arrowheads (inheritance, aggregation, composition, dependency). A connector cannot carry a label; to caption one, add a text element near it with board_add. The board is read first to check the ids exist. " +
         LIVE,
       inputSchema: { boardId, connections: z.array(connectionSpec).min(1).max(200) },
       annotations: annotations(false),
@@ -464,9 +465,7 @@ export function registerBoardTools(server: McpServer, deps: BoardToolsDeps): voi
         const byId = new Map<string, Json>(read.scene.elements.filter((e) => typeof e.id === "string").map((e) => [e.id as string, e]));
         const built: BoardElement[] = [];
         indexed("connections", connections, (spec) => {
-          const { connector, label } = buildConnector(spec, byId, ctx);
-          built.push(connector);
-          if (label) built.push(label);
+          built.push(buildConnector(spec, byId, ctx).connector);
         });
         const outcome = await sendOps(deps, id, built.map((element) => ({ kind: "add" as const, element })));
         const ids = built.filter((b) => b.type === "connector" && outcome.applied.includes(b.id)).map((b) => b.id);

@@ -28,7 +28,7 @@ import { AuthManager } from "./auth.ts";
 import { registerBoardTools, type BoardToolsDeps } from "./board-tools.ts";
 import { configFromEnv, TodrawnApi } from "./todrawn-api.ts";
 
-export const SERVER_VERSION = "0.2.0";
+export const SERVER_VERSION = "0.2.1";
 const MAX_DRAWING_PATHS = 2000;
 
 const EXPORT_RULES =

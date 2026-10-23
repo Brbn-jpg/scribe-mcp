@@ -180,20 +180,22 @@ test("a failure mid-way reports what was applied", async () => {
   assert.match(text(result), /Stopped early: Too many requests/);
 });
 
-test("board_connect checks ids and adds connectors plus labels", async () => {
+test("board_connect checks ids and adds connectors and rejects a label", async () => {
   const a = { id: "a", type: "box", x: 0, y: 0, w: 180, h: 96, label: "A" };
   const b = { id: "b", type: "umlClass", x: 400, y: 0, w: 240, h: 92, name: "B", attributes: [], methods: [] };
   const { client, requests } = await setup((req) => (req.method === "GET" ? { body: board([a, b]) } : { body: { results: req.body.ops.map((op: any) => ({ status: "applied", elementId: op.element.id })) } }));
   const missing = await client.callTool({ name: "board_connect", arguments: { boardId: BOARD, connections: [{ from: "a", to: "zzz" }] } });
   assert.equal(missing.isError, true);
   assert.match(text(missing), /connections\[0\].*"zzz" is not an element/);
-  const ok = await client.callTool({ name: "board_connect", arguments: { boardId: BOARD, connections: [{ from: "a", to: "b", label: "uses", relation: "dependency" }] } });
+  const ok = await client.callTool({ name: "board_connect", arguments: { boardId: BOARD, connections: [{ from: "a", to: "b", relation: "dependency" }] } });
   assert.notEqual(ok.isError, true);
   assert.match(text(ok), /Connector ids: e1/);
   const ops = requests.filter((r) => r.method === "POST").at(-1)!.body.ops;
   assert.equal(ops[0].element.type, "connector");
   assert.deepEqual(ops[0].element.source, { nodeId: "a", port: "right" });
-  assert.equal(ops[1].element.type, "text");
+  assert.equal(ops.length, 1);
+  const schema = (await client.listTools()).tools.find((t) => t.name === "board_connect")!.inputSchema as any;
+  assert.equal(schema.properties.connections.items.properties.label, undefined);
 });
 
 test("board_draw places strokes in the requested box", async () => {

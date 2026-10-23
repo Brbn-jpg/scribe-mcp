@@ -583,7 +583,6 @@ export interface ConnectionSpec {
   to: ConnectEndSpec;
   fromPort?: Port;
   toPort?: Port;
-  label?: string;
   routing?: string;
   relation?: string;
   stroke?: string;
@@ -628,10 +627,10 @@ function resolveEnd(end: ConnectEndSpec, port: Port | undefined, byId: Map<strin
 
 /**
  * Builds a connector between two existing elements (or free points). Ports
- * default to the facing sides. A label has no field on a connector, so it
- * becomes a text element at the midpoint, returned as `label`.
+ * default to the facing sides. A connector has no label field in the scene
+ * schema; a caption is a separate text element the agent adds with board_add.
  */
-export function buildConnector(spec: ConnectionSpec, byId: Map<string, Json>, ctx: BuildContext = {}): { connector: BoardElement; label?: BoardElement } {
+export function buildConnector(spec: ConnectionSpec, byId: Map<string, Json>, ctx: BuildContext = {}): { connector: BoardElement } {
   const src = typeof spec.from === "string" ? byId.get(spec.from) : undefined;
   const dst = typeof spec.to === "string" ? byId.get(spec.to) : undefined;
   let fromPort = spec.fromPort;
@@ -668,15 +667,7 @@ export function buildConnector(spec: ConnectionSpec, byId: Map<string, Json>, ct
   const built = clean(connector);
   validateElement(built);
 
-  let label: BoardElement | undefined;
-  const labelText = spec.label?.trim();
-  if (labelText) {
-    const point = (end: Json, node?: Json) => (node ? portPoint(node, (end as { port: Port }).port) : { x: end.x as number, y: end.y as number });
-    const p = point(source.end, source.node);
-    const q = point(target.end, target.node);
-    label = buildElement({ type: "text", text: labelText, x: round((p.x + q.x) / 2 + 6), y: round((p.y + q.y) / 2 - 24), fontSize: 14 }, ctx);
-  }
-  return { connector: built, label };
+  return { connector: built };
 }
 
 /* ---------- update ---------- */

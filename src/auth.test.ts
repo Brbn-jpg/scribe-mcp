@@ -127,6 +127,21 @@ test("device flow: denied and expired explain themselves", async () => {
   assert.throws(() => expired.auth.requireToken(), /expired.*todrawn_login/s);
 });
 
+test("device flow: takeFailure reports a denied or expired previous attempt once", async () => {
+  const denied = flow([{ status: "denied" }]);
+  await denied.auth.startLogin("x");
+  await denied.auth.loginSettled;
+  assert.equal(denied.auth.takeFailure(), "The previous sign-in request was denied.");
+  assert.equal(denied.auth.takeFailure(), null);
+
+  const expired = flow([{ status: "expired" }]);
+  await expired.auth.startLogin("x");
+  await expired.auth.loginSettled;
+  assert.equal(expired.auth.takeFailure(), "The previous sign-in request expired before it was approved.");
+
+  assert.equal(flow([]).auth.takeFailure(), null);
+});
+
 test("device flow: stops at expiresIn, tolerates network blips", async () => {
   const { auth, calls } = flow([new Error("offline"), { status: "pending" }], 12, 5);
   await auth.startLogin("x");

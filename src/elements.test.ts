@@ -129,19 +129,17 @@ test("validateElement is the last line of defence", () => {
   assert.throws(() => validateElement({ id: "a", type: "table", w: 5, h: 5, colWidths: [0], cells: [[""]] }));
 });
 
-test("connectors default to facing ports and label as text", () => {
+test("connectors default to facing ports and carry no label", () => {
   const a = buildElement({ type: "box", x: 0, y: 0 }, ctx);
   const b = buildElement({ type: "box", x: 400, y: 0 }, ctx);
   const c = buildElement({ type: "box", x: 0, y: 300 }, ctx);
   const rect = buildElement({ type: "rect" }, ctx);
   const byId = new Map<string, Json>([a, b, c, rect].map((e) => [e.id, e]));
-  const { connector, label } = buildConnector({ from: a.id, to: b.id, label: "calls", relation: "dependency" }, byId, ctx);
+  const { connector } = buildConnector({ from: a.id, to: b.id, relation: "dependency" }, byId, ctx);
   assert.deepEqual(connector.source, { nodeId: a.id, port: "right" });
   assert.deepEqual(connector.target, { nodeId: b.id, port: "left" });
   assert.equal(connector.routing, "orthogonal");
   assert.equal(connector.relation, "dependency");
-  assert.equal(label?.type, "text");
-  assert.equal(label?.text, "calls");
   const down = buildConnector({ from: a.id, to: c.id }, byId, ctx).connector;
   assert.deepEqual(down.source, { nodeId: a.id, port: "bottom" });
   assert.deepEqual(down.target, { nodeId: c.id, port: "top" });
