@@ -45,9 +45,9 @@ Then ask, for example: "Make a vertical Scribe video of the function I just wrot
 
 | Tool | What it does |
 |---|---|
-| `scribe_create_video` | Takes `text` and optionally `language`, `aspect`, look and pacing settings and `locale`. Returns the studio link. |
-| `scribe_create_drawing` | Takes `paths` (SVG path data plus an optional ink colour each) and optionally `viewBox`, `aspect`, look settings and `locale`. Curves and arcs are flattened; the pen draws the paths in order. Returns the studio link. |
-| `scribe_paint_image` | Takes `imagePath` (a local PNG or JPEG) and optionally `aspect`, `detail` (low, medium, high), `pen`, `background`, `speedMultiplier` and `locale`. Paints the photo into up to ~2800 coloured strokes (an underpaint, then detail) and returns the studio link. |
+| `scribe_create_video` | Takes `text` and optionally `language`, `aspect`, look and pacing settings (including board `pattern`, `density` and `cameraZoom`), `segments` and `locale`. Returns the studio link. |
+| `scribe_create_drawing` | Takes `paths` (SVG path data plus an optional ink colour each) and optionally `viewBox`, `aspect`, look settings (including `pattern`, `density` and `cameraZoom`) and `locale`. Curves and arcs are flattened; the pen draws the paths in order. Returns the studio link. |
+| `scribe_paint_image` | Takes `imagePath` (a local PNG or JPEG) and optionally `aspect`, `detail` (low, medium, high), `pen`, `background`, `speedMultiplier`, `pattern`, `density`, `cameraZoom` and `locale`. Paints the photo into up to ~2800 coloured strokes (an underpaint, then detail) and returns the studio link. |
 | `scribe_limits` | Lists input limits and what the Free and Premium plans allow. |
 | `todrawn_login` | Signs the agent in to your Todrawn account (device flow, see Boards). If already signed in, says as whom. |
 | `todrawn_logout` | Revokes the agent's token and deletes it from this machine. |
@@ -59,6 +59,19 @@ Then ask, for example: "Make a vertical Scribe video of the function I just wrot
 | `board_draw` | Takes `boardId`, `paths` (SVG path data) and optionally `x`, `y`, `width`. Draws them as freehand pen strokes. |
 | `board_update` | Takes `boardId` and `updates` (`id` plus the fields to change). |
 | `board_delete` | Takes `boardId` and `ids`. Attached connectors go with their elements. |
+
+## Segments, pattern and camera
+
+`scribe_create_video` accepts `segments`: up to 500 passages that each get their own `speed` (0.5 to 2), glyph `size` (0.6 to 2), `pen`, `pauseAfter` (0 to 3 seconds) or `zoom` (a 1 to 2.5 camera punch-in while that passage is written). A passage is selected in one of two ways, never both:
+
+- `match`: an exact, case-sensitive piece of the text, with an optional `occurrence` (1-based, default 1).
+- `fromLine` with an optional `toLine`: whole lines, 1-based and inclusive.
+
+The server converts the selection to character offsets over the text as the studio sees it (line endings normalised to LF), so the agent never has to count. Where passages overlap, the later one wins. A passage that cannot be found, an empty selection or an out-of-range value comes back as a tool error that names the passage.
+
+`pattern` (dots, lines, grid, staff, vertical, blank) and `density` (the spacing of its marks, 16 to 192, even numbers) set the board surface. `cameraZoom` (75, 100, 125, 150, 175 or 200) frames the 3D pen view, in its preview and its export; the flat 2D view ignores it, and it is separate from a passage's `zoom`, which works in both views. All three work on text, drawing and photo links.
+
+Link size: a link holds at most 400,000 encoded characters, about 1 MiB of typical code. Photo paintings keep a smaller budget of 120,000 characters and drop their finest strokes to fit.
 
 ## Boards
 

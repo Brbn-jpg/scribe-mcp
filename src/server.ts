@@ -3,6 +3,8 @@ import { z } from "zod";
 import {
   ASPECTS,
   BACKGROUNDS,
+  BOARD_PATTERNS,
+  CAMERA_ZOOMS,
   COLOR_MODES,
   FRAME_RATES,
   FREE_EXPORTS_PER_DAY,
@@ -12,10 +14,14 @@ import {
   MAX_INPUT_BYTES,
   MAX_LINES,
   MAX_PLAYBACK_SECONDS,
+  MAX_RECIPE_LINK_CHARS,
+  MAX_SEGMENTS,
   DRAW_COLOR_KEYS,
+  PATTERN_DENSITY,
   PENS,
   READING_WPS,
   RESOLUTIONS,
+  SEGMENT_LIMITS,
   SPEED,
   TIMINGS,
 } from "./constants.ts";
@@ -28,7 +34,7 @@ import { AuthManager } from "./auth.ts";
 import { registerBoardTools, type BoardToolsDeps } from "./board-tools.ts";
 import { configFromEnv, TodrawnApi } from "./todrawn-api.ts";
 
-export const SERVER_VERSION = "0.2.1";
+export const SERVER_VERSION = "0.3.0";
 const MAX_DRAWING_PATHS = 2000;
 
 const EXPORT_RULES =
@@ -42,11 +48,27 @@ const LIMITS_TEXT = [
   `- Playback: clips are capped at ${MAX_PLAYBACK_SECONDS} s; longer documents are drawn faster to fit. A readable clip is a few dozen lines.`,
   `- Output: ${RESOLUTIONS.join(" or ")}, ${FRAME_RATES.join(" or ")} fps, aspects ${ASPECTS.join(", ")} (feed = 4:5).`,
   `- Languages with syntax colours: ${LANGUAGES.filter((l) => l !== "plain").join(", ")}; "plain" draws prose and supports a Markdown subset (headings, **bold**, lists, ==highlight==).`,
+  `- Passages: "segments" give a passage of a video its own speed (${SEGMENT_LIMITS.speed.join(" to ")}), glyph size (${SEGMENT_LIMITS.size.join(" to ")}), pen, pause after it (${SEGMENT_LIMITS.pauseAfter.join(" to ")} s) or camera punch-in (${SEGMENT_LIMITS.zoom.join(" to ")}x). Select a passage with "match" (an exact substring, optional "occurrence") or "fromLine"/"toLine" (1-based, inclusive); at most ${MAX_SEGMENTS}. Later passages win where they overlap.`,
+  `- Board: pattern ${BOARD_PATTERNS.join(", ")}; density is the spacing of the marks, ${PATTERN_DENSITY.min} to ${PATTERN_DENSITY.max}, even numbers.`,
+  `- Camera: cameraZoom frames the 3D pen view at ${CAMERA_ZOOMS.join(", ")} percent (the flat 2D view ignores it); a passage's zoom works in both views.`,
+  `- Link size: a project link holds at most ${MAX_RECIPE_LINK_CHARS} encoded characters, about 1 MiB of typical code; photo paintings use a smaller budget and drop their finest strokes to fit.`,
   `- ${EXPORT_RULES}`,
   `- Drawings: SVG path data, drawn as pen lines in path order (fills are ignored); inks ${DRAW_COLOR_KEYS.join(", ")} or #rrggbb.`,
   "- Photos: PNG or JPEG, painted locally into up to ~2800 strokes; the image itself is never uploaded.",
   "- This server only builds links; the video is rendered and exported in the person's browser.",
 ].join("\n");
+
+const segmentSchema = z.object({
+  match: z.string().optional().describe("Select the passage by an exact, case-sensitive piece of the text (line endings are normalised). Use this or fromLine, not both."),
+  occurrence: z.number().int().min(1).optional().describe("Which occurrence of match to use, counting from 1. Defaults to 1."),
+  fromLine: z.number().int().min(1).optional().describe("Select whole lines instead: the first line, counting from 1."),
+  toLine: z.number().int().min(1).optional().describe("The last line, inclusive. Defaults to fromLine."),
+  speed: z.number().min(SEGMENT_LIMITS.speed[0]).max(SEGMENT_LIMITS.speed[1]).optional().describe("Writing speed for this passage: 0.5 slower to 2 faster."),
+  size: z.number().min(SEGMENT_LIMITS.size[0]).max(SEGMENT_LIMITS.size[1]).optional().describe("Glyph size for this passage: 0.6 smaller to 2 larger."),
+  pen: z.enum(PENS).optional().describe("Pen that writes this passage."),
+  pauseAfter: z.number().min(SEGMENT_LIMITS.pauseAfter[0]).max(SEGMENT_LIMITS.pauseAfter[1]).optional().describe("Seconds the pen holds after the passage, 0 to 3."),
+  zoom: z.number().min(SEGMENT_LIMITS.zoom[0]).max(SEGMENT_LIMITS.zoom[1]).optional().describe("Camera punch-in multiplier while this passage is written: 1 (none) to 2.5. Not the same as the video's cameraZoom."),
+});
 
 const createVideoShape = {
   text: z.string().min(1).describe("The code or text to draw, exactly as it should appear."),
@@ -79,6 +101,26 @@ const createVideoShape = {
   layout: z.enum(LAYOUTS).optional().describe("auto scrolls tall aspects and pages wide ones."),
   resolution: z.enum(RESOLUTIONS).optional(),
   fps: z.union([z.literal(24), z.literal(30)]).optional(),
+  segments: z
+    .array(segmentSchema)
+    .max(MAX_SEGMENTS)
+    .optional()
+    .describe(
+      `Passages with their own speed, size, pen, pause or zoom, for example to slow down the key line. Each one selects text with match or fromLine/toLine and sets at least one of speed, size, pen, pauseAfter, zoom. At most ${MAX_SEGMENTS}; later ones win where they overlap.`,
+    ),
+  pattern: z.enum(BOARD_PATTERNS).optional().describe("Marks printed on the board behind the writing: dots, lines, grid, staff, vertical lines or blank."),
+  density: z
+    .number()
+    .int()
+    .min(PATTERN_DENSITY.min)
+    .max(PATTERN_DENSITY.max)
+    .multipleOf(PATTERN_DENSITY.step)
+    .optional()
+    .describe(`Spacing of the board pattern's marks, ${PATTERN_DENSITY.min} to ${PATTERN_DENSITY.max}, even numbers only (default 28). Larger is sparser.`),
+  cameraZoom: z
+    .union([z.literal(75), z.literal(100), z.literal(125), z.literal(150), z.literal(175), z.literal(200)])
+    .optional()
+    .describe(`Camera framing of the 3D pen view (its preview and its export) in percent: ${CAMERA_ZOOMS.join(", ")}; 75 shows the most board, 200 follows the pen closest. The flat 2D view ignores it. Not the same as a passage's zoom.`),
   locale: z
     .enum(Object.keys(LOCALE_PATH_PREFIXES) as [keyof typeof LOCALE_PATH_PREFIXES, ...(keyof typeof LOCALE_PATH_PREFIXES)[]])
     .optional()
@@ -97,6 +139,9 @@ const SETTING_KEYS = [
   "layout",
   "resolution",
   "fps",
+  "pattern",
+  "density",
+  "cameraZoom",
 ] as const satisfies readonly (keyof LinkSettings)[];
 
 const localeSchema = createVideoShape.locale;
@@ -128,6 +173,9 @@ const createDrawingShape = {
   speedMultiplier: createVideoShape.speedMultiplier,
   resolution: createVideoShape.resolution,
   fps: createVideoShape.fps,
+  pattern: createVideoShape.pattern,
+  density: createVideoShape.density,
+  cameraZoom: createVideoShape.cameraZoom,
   locale: localeSchema,
 };
 
@@ -144,6 +192,9 @@ const paintImageShape = {
   pen: createVideoShape.pen.describe("Pen width shapes the painting: fineliner (default) is the finest, marker the boldest."),
   background: createVideoShape.background,
   speedMultiplier: createVideoShape.speedMultiplier,
+  pattern: createVideoShape.pattern,
+  density: createVideoShape.density,
+  cameraZoom: createVideoShape.cameraZoom,
   locale: localeSchema,
 };
 
@@ -163,6 +214,7 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
       description:
         "Turns code or text into a Todrawn Scribe project: a video of a pen writing it out by hand. " +
         "Returns a link that opens the Scribe studio with the project loaded, where the person previews it and exports the MP4. " +
+        "Optional segments give chosen passages their own speed, size, pen, pause or zoom; pattern, density and cameraZoom set the board and camera. " +
         "Give the link to the person; do not try to download a video from it. " +
         EXPORT_RULES,
       inputSchema: createVideoShape,
@@ -179,6 +231,7 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
           language: args.language,
           aspect: args.aspect,
           settings,
+          segments: args.segments,
           locale: args.locale,
           baseUrl: options.baseUrl,
         });
@@ -190,7 +243,7 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
                 `Open this link to preview and export the video in Todrawn Scribe:`,
                 link.url,
                 "",
-                `Language: ${link.language}, ${link.lines} line${link.lines === 1 ? "" : "s"}. The whole project is inside the link after "#", so nothing was uploaded.`,
+                `Language: ${link.language}, ${link.lines} line${link.lines === 1 ? "" : "s"}${link.segments > 0 ? `, ${link.segments} passage${link.segments === 1 ? "" : "s"} with their own settings` : ""}. The whole project is inside the link after "#", so nothing was uploaded.`,
                 `Clips are capped at ${MAX_PLAYBACK_SECONDS} s; longer text is drawn faster to fit.`,
                 EXPORT_RULES,
               ].join("\n"),
@@ -212,7 +265,7 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
       title: "Create a Todrawn Scribe drawing video",
       description:
         "Turns a line drawing, given as SVG paths, into a Todrawn Scribe Draw project: a video of a pen drawing it stroke by stroke. " +
-        "Describe the subject as outlines and details, not filled shapes. " +
+        "Describe the subject as outlines and details, not filled shapes. Board pattern, density and cameraZoom are optional. " +
         "Returns a link that opens the Scribe studio with the drawing loaded, where the person previews it and exports the MP4. " +
         EXPORT_RULES,
       inputSchema: createDrawingShape,
@@ -230,6 +283,9 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
             speedMultiplier: args.speedMultiplier,
             resolution: args.resolution,
             fps: args.fps,
+            pattern: args.pattern,
+            density: args.density,
+            cameraZoom: args.cameraZoom,
           },
           locale: args.locale,
           baseUrl: options.baseUrl,
@@ -278,6 +334,9 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
           pen: args.pen,
           background: args.background,
           speedMultiplier: args.speedMultiplier,
+          pattern: args.pattern,
+          density: args.density,
+          cameraZoom: args.cameraZoom,
           locale: args.locale,
           baseUrl: options.baseUrl,
         });

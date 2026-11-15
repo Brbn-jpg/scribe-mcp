@@ -27,7 +27,7 @@ export interface DrawingInput {
   /** "minX minY width height" framing the drawing; defaults to the paths' bounding box. */
   viewBox?: string;
   aspect?: Aspect;
-  settings?: Pick<LinkSettings, "background" | "pen" | "speedMultiplier" | "resolution" | "fps">;
+  settings?: Pick<LinkSettings, "background" | "pen" | "speedMultiplier" | "resolution" | "fps" | "pattern" | "density" | "cameraZoom">;
   locale?: Locale;
   baseUrl?: string;
 }

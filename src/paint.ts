@@ -1,6 +1,6 @@
-import { type Aspect, DRAW_COORD_MAX, type Locale } from "./constants.ts";
+import { type Aspect, DRAW_COORD_MAX, type Locale, MAX_PAINT_LINK_CHARS } from "./constants.ts";
 import { encodeDrawLink } from "./drawing.ts";
-import { LinkError } from "./link.ts";
+import { LinkError, type LinkSettings } from "./link.ts";
 import { type Detail, type Painting, paintImage, type Pen, type RgbImage } from "./painter.ts";
 
 export interface PaintLinkInput {
@@ -9,9 +9,12 @@ export interface PaintLinkInput {
   detail?: Detail;
   background?: "paper" | "dark";
   speedMultiplier?: number;
+  pattern?: LinkSettings["pattern"];
+  density?: number;
+  cameraZoom?: LinkSettings["cameraZoom"];
   locale?: Locale;
   baseUrl?: string;
-  /** Link cap override for tests. */
+  /** Link cap override for tests; defaults to MAX_PAINT_LINK_CHARS so painted links stay as small as before. */
   maxChars?: number;
 }
 
@@ -34,10 +37,17 @@ export function paintToLink(image: RgbImage, input: PaintLinkInput = {}): Painte
     if (pts.length === 4 && pts[0] === pts[2] && pts[1] === pts[3]) pts[2] = Math.min(DRAW_COORD_MAX, pts[2]! + 1);
     return { color: s.color, pts };
   });
-  const settings = { background: input.background ?? "paper", pen: input.pen ?? "fineliner", speedMultiplier: input.speedMultiplier };
+  const settings = {
+    background: input.background ?? "paper",
+    pen: input.pen ?? "fineliner",
+    speedMultiplier: input.speedMultiplier,
+    pattern: input.pattern,
+    density: input.density,
+    cameraZoom: input.cameraZoom,
+  };
   let keep = all.length;
   for (;;) {
-    const url = encodeDrawLink({ aspect: painting.aspect, strokes: all.slice(0, keep), settings, locale: input.locale, baseUrl: input.baseUrl, maxChars: input.maxChars });
+    const url = encodeDrawLink({ aspect: painting.aspect, strokes: all.slice(0, keep), settings, locale: input.locale, baseUrl: input.baseUrl, maxChars: input.maxChars ?? MAX_PAINT_LINK_CHARS });
     if (url) return { url, aspect: painting.aspect, strokes: keep, trimmed: all.length - keep, meanAbsDiff: painting.meanAbsDiff };
     keep = Math.floor(keep * 0.93);
     if (keep <= painting.underpaintStrokes) {

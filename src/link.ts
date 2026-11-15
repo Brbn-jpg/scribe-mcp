@@ -1,6 +1,8 @@
 import { deflateRawSync } from "node:zlib";
 import {
   type Aspect,
+  type BOARD_PATTERNS,
+  type CAMERA_ZOOMS,
   type Language,
   type Locale,
   LANGUAGES,
@@ -11,6 +13,11 @@ import {
   MAX_RECIPE_LINK_JSON_BYTES,
   RECIPE_LINK_VERSION,
 } from "./constants.ts";
+import { LinkError } from "./link-error.ts";
+import { resolveSegments, type SegmentInput } from "./segments.ts";
+
+export { LinkError };
+export type { SegmentInput };
 
 export const DEFAULT_BASE_URL = "https://todrawn.com";
 
@@ -57,8 +64,6 @@ const LANGUAGE_ALIASES: Record<string, Language> = {
   prose: "plain",
 };
 
-export class LinkError extends Error {}
-
 export function resolveLanguage(value: string | undefined): Language {
   if (value === undefined || value.trim() === "") return "plain";
   const key = value.trim().toLowerCase();
@@ -69,6 +74,9 @@ export function resolveLanguage(value: string | undefined): Language {
     `Unknown language "${value}". Use one of: ${LANGUAGES.join(", ")} (or a common name such as typescript, python, c++, shell, markdown).`,
   );
 }
+
+type BoardPattern = (typeof BOARD_PATTERNS)[number];
+type CameraZoom = (typeof CAMERA_ZOOMS)[number];
 
 export interface LinkSettings {
   background?: "dark" | "paper";
@@ -82,6 +90,11 @@ export interface LinkSettings {
   layout?: "auto" | "scroll" | "pages";
   resolution?: "720p" | "1080p";
   fps?: 24 | 30;
+  pattern?: BoardPattern;
+  /** Pattern spacing in reference-canvas pixels, even, 16 to 192. */
+  density?: number;
+  /** Camera framing percentage. */
+  cameraZoom?: CameraZoom;
 }
 
 export interface LinkInput {
@@ -89,6 +102,8 @@ export interface LinkInput {
   language?: string;
   aspect?: Aspect;
   settings?: LinkSettings;
+  /** Passages with their own speed, size, pen, pause or zoom. */
+  segments?: SegmentInput[];
   locale?: Locale;
   baseUrl?: string;
 }
@@ -98,6 +113,8 @@ export interface BuiltLink {
   language: Language;
   lines: number;
   bytes: number;
+  /** Number of passages with their own settings. */
+  segments: number;
 }
 
 /** Builds a /scribe#r= link; throws LinkError with a message meant for the agent. */
@@ -116,10 +133,12 @@ export function buildRecipeLink(input: LinkInput): BuiltLink {
   const settings = Object.fromEntries(
     Object.entries(input.settings ?? {}).filter(([, value]) => value !== undefined),
   );
+  const segments = input.segments && input.segments.length > 0 ? resolveSegments(text, input.segments) : [];
   const payload = {
     v: RECIPE_LINK_VERSION,
     text,
     language,
+    ...(segments.length > 0 ? { segments } : {}),
     ...(input.aspect ? { aspect: input.aspect } : {}),
     ...(Object.keys(settings).length > 0 ? { settings } : {}),
   };
@@ -139,5 +158,5 @@ export function buildRecipeLink(input: LinkInput): BuiltLink {
   }
   const base = (input.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
   const prefix = LOCALE_PATH_PREFIXES[input.locale ?? "en"];
-  return { url: `${base}${prefix}/scribe#r=${encoded}`, language, lines, bytes };
+  return { url: `${base}${prefix}/scribe#r=${encoded}`, language, lines, bytes, segments: segments.length };
 }

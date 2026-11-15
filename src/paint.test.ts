@@ -6,7 +6,7 @@ import { test } from "node:test";
 import { inflateRawSync } from "node:zlib";
 import jpeg from "jpeg-js";
 import { PNG } from "pngjs";
-import { MAX_RECIPE_LINK_CHARS } from "./constants.ts";
+import { MAX_PAINT_LINK_CHARS } from "./constants.ts";
 import { readImage } from "./image.ts";
 import { paintToLink } from "./paint.ts";
 import { noiseImage, sampleImage } from "./test-images.ts";
@@ -35,7 +35,7 @@ test("trims the finest strokes when the link would be too long", () => {
   assert.ok(link.trimmed > 0);
   assert.ok(link.url.split("#r=")[1]!.length <= cap);
   // the real cap is honoured by default
-  assert.ok(paintToLink(noiseImage(), { detail: "high" }).url.split("#r=")[1]!.length <= MAX_RECIPE_LINK_CHARS);
+  assert.ok(paintToLink(noiseImage(), { detail: "high" }).url.split("#r=")[1]!.length <= MAX_PAINT_LINK_CHARS);
 });
 
 test("reads PNG and JPEG, composites transparency over white", async () => {
@@ -54,4 +54,17 @@ test("rejects missing and unsupported files with readable errors", async () => {
   await assert.rejects(readImage(join(dir, "nope.png")), /Could not read/);
   writeFileSync(join(dir, "pic.webp"), Buffer.from("RIFF0000WEBPVP8 "));
   await assert.rejects(readImage(join(dir, "pic.webp")), /Only PNG and JPEG/);
+});
+
+test("paintToLink emits pattern, density and camera zoom only when set", () => {
+  const settings = (input: object) =>
+    JSON.parse(inflateRawSync(Buffer.from(paintToLink(sampleImage(), { detail: "low", ...input }).url.split("#r=")[1]!, "base64url")).toString("utf8")).settings;
+  assert.deepEqual(settings({}), { background: "paper", pen: "fineliner" });
+  assert.deepEqual(settings({ pattern: "lines", density: 32, cameraZoom: 125 }), {
+    background: "paper",
+    pen: "fineliner",
+    pattern: "lines",
+    density: 32,
+    cameraZoom: 125,
+  });
 });

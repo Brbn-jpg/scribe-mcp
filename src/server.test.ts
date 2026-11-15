@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { inflateRawSync } from "node:zlib";
 import { createScribeServer } from "./server.ts";
 
 async function connect() {
@@ -88,4 +89,61 @@ test("scribe_paint_image paints a local file and reports missing ones", async ()
   assert.match(text(ok), /nothing was uploaded/);
   const missing = await client.callTool({ name: "scribe_paint_image", arguments: { imagePath: "/no/such/file.png" } });
   assert.equal(missing.isError, true);
+});
+
+function decodeLink(reply: string): { text: string; settings?: Record<string, unknown>; segments?: { start: number; end: number }[] } {
+  const url = reply.match(/https:\/\/example\.test\/scribe#r=[A-Za-z0-9_-]+/)![0];
+  return JSON.parse(inflateRawSync(Buffer.from(new URL(url).hash.replace(/^#r=/, ""), "base64url")).toString("utf8"));
+}
+
+test("scribe_create_video carries segments and the board and camera settings", async () => {
+  const client = await connect();
+  const result = await client.callTool({
+    name: "scribe_create_video",
+    arguments: {
+      text: "const a = 1;\nconst b = 2;",
+      language: "ts",
+      pattern: "grid",
+      density: 48,
+      cameraZoom: 150,
+      segments: [{ match: "const b", speed: 0.5 }, { fromLine: 1, zoom: 2 }],
+    },
+  });
+  assert.notEqual(result.isError, true);
+  assert.match(text(result), /2 passages with their own settings/);
+  const payload = decodeLink(text(result));
+  assert.deepEqual(payload.settings, { pattern: "grid", density: 48, cameraZoom: 150 });
+  assert.deepEqual(payload.segments, [
+    { start: 13, end: 20, speed: 0.5 },
+    { start: 0, end: 12, zoom: 2 },
+  ]);
+});
+
+test("scribe_create_video reports an invalid segment as a tool error", async () => {
+  const client = await connect();
+  const result = await client.callTool({
+    name: "scribe_create_video",
+    arguments: { text: "abc", segments: [{ match: "zzz", speed: 1.5 }] },
+  });
+  assert.equal(result.isError, true);
+  assert.match(text(result), /Segment 1: .*not found/);
+});
+
+test("scribe_create_drawing passes the board and camera settings through", async () => {
+  const client = await connect();
+  const result = await client.callTool({
+    name: "scribe_create_drawing",
+    arguments: { paths: [{ d: "M0 0 L40 20" }], pattern: "dots", density: 20, cameraZoom: 75 },
+  });
+  assert.notEqual(result.isError, true);
+  assert.deepEqual((decodeLink(text(result)) as { settings?: unknown }).settings, { pattern: "dots", density: 20, cameraZoom: 75 });
+});
+
+test("scribe_limits mentions segments, patterns, camera and the link size", async () => {
+  const client = await connect();
+  const limits = text(await client.callTool({ name: "scribe_limits", arguments: {} }));
+  assert.match(limits, /Passages:/);
+  assert.match(limits, /Board: pattern dots/);
+  assert.match(limits, /cameraZoom/);
+  assert.match(limits, /400000 encoded characters/);
 });

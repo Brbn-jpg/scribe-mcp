@@ -50,3 +50,11 @@ test("never emits non-finite coordinates (#470)", () => {
   // finite inputs whose arithmetic overflows must not become null either
   assert.throws(() => buildDrawingLink({ paths: [{ d: "M 0 0 L 1e308 1e308 L -1e308 -1e308" }] }));
 });
+
+test("emits pattern, density and camera zoom only when set", () => {
+  const paths = [{ d: "M0 0 L100 100" }];
+  assert.equal(decode(buildDrawingLink({ paths }).url).settings, undefined);
+  const settings = { background: "paper", pattern: "grid", density: 40, cameraZoom: 150 } as const;
+  assert.deepEqual(decode(buildDrawingLink({ paths, settings }).url).settings, settings);
+  assert.deepEqual(decode(buildDrawingLink({ paths, settings: { pattern: "dots" } }).url).settings, { pattern: "dots" });
+});
