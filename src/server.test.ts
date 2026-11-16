@@ -119,6 +119,32 @@ test("scribe_create_video carries segments and the board and camera settings", a
   ]);
 });
 
+test("scribe_create_video carries the camera tilt and rotation", async () => {
+  const client = await connect();
+  const result = await client.callTool({
+    name: "scribe_create_video",
+    arguments: { text: "abc", cameraTilt: 65, cameraRotation: -20 },
+  });
+  assert.notEqual(result.isError, true);
+  assert.deepEqual(decodeLink(text(result)).settings, { cameraTilt: 65, cameraRotation: -20 });
+  const plain = await client.callTool({ name: "scribe_create_video", arguments: { text: "abc" } });
+  assert.equal(decodeLink(text(plain)).settings, undefined);
+});
+
+test("camera tilt and rotation are validated against the allowed lists", async () => {
+  const client = await connect();
+  for (const args of [{ cameraTilt: 42 }, { cameraTilt: 95 }, { cameraRotation: 50 }, { cameraRotation: 7 }]) {
+    let failed = false;
+    try {
+      const result = await client.callTool({ name: "scribe_create_video", arguments: { text: "abc", ...args } });
+      failed = result.isError === true;
+    } catch {
+      failed = true;
+    }
+    assert.equal(failed, true, JSON.stringify(args));
+  }
+});
+
 test("scribe_create_video reports an invalid segment as a tool error", async () => {
   const client = await connect();
   const result = await client.callTool({
@@ -133,10 +159,16 @@ test("scribe_create_drawing passes the board and camera settings through", async
   const client = await connect();
   const result = await client.callTool({
     name: "scribe_create_drawing",
-    arguments: { paths: [{ d: "M0 0 L40 20" }], pattern: "dots", density: 20, cameraZoom: 75 },
+    arguments: { paths: [{ d: "M0 0 L40 20" }], pattern: "dots", density: 20, cameraZoom: 75, cameraTilt: 20, cameraRotation: 45 },
   });
   assert.notEqual(result.isError, true);
-  assert.deepEqual((decodeLink(text(result)) as { settings?: unknown }).settings, { pattern: "dots", density: 20, cameraZoom: 75 });
+  assert.deepEqual((decodeLink(text(result)) as { settings?: unknown }).settings, {
+    pattern: "dots",
+    density: 20,
+    cameraZoom: 75,
+    cameraTilt: 20,
+    cameraRotation: 45,
+  });
 });
 
 test("scribe_limits mentions segments, patterns, camera and the link size", async () => {
@@ -145,5 +177,7 @@ test("scribe_limits mentions segments, patterns, camera and the link size", asyn
   assert.match(limits, /Passages:/);
   assert.match(limits, /Board: pattern dots/);
   assert.match(limits, /cameraZoom/);
+  assert.match(limits, /cameraTilt/);
+  assert.match(limits, /cameraRotation/);
   assert.match(limits, /400000 encoded characters/);
 });

@@ -4,6 +4,8 @@ import {
   ASPECTS,
   BACKGROUNDS,
   BOARD_PATTERNS,
+  CAMERA_ROTATIONS,
+  CAMERA_TILTS,
   CAMERA_ZOOMS,
   COLOR_MODES,
   FRAME_RATES,
@@ -34,7 +36,7 @@ import { AuthManager } from "./auth.ts";
 import { registerBoardTools, type BoardToolsDeps } from "./board-tools.ts";
 import { configFromEnv, TodrawnApi } from "./todrawn-api.ts";
 
-export const SERVER_VERSION = "0.3.0";
+export const SERVER_VERSION = "0.4.0";
 const MAX_DRAWING_PATHS = 2000;
 
 const EXPORT_RULES =
@@ -51,6 +53,7 @@ const LIMITS_TEXT = [
   `- Passages: "segments" give a passage of a video its own speed (${SEGMENT_LIMITS.speed.join(" to ")}), glyph size (${SEGMENT_LIMITS.size.join(" to ")}), pen, pause after it (${SEGMENT_LIMITS.pauseAfter.join(" to ")} s) or camera punch-in (${SEGMENT_LIMITS.zoom.join(" to ")}x). Select a passage with "match" (an exact substring, optional "occurrence") or "fromLine"/"toLine" (1-based, inclusive); at most ${MAX_SEGMENTS}. Later passages win where they overlap.`,
   `- Board: pattern ${BOARD_PATTERNS.join(", ")}; density is the spacing of the marks, ${PATTERN_DENSITY.min} to ${PATTERN_DENSITY.max}, even numbers.`,
   `- Camera: cameraZoom frames the 3D pen view at ${CAMERA_ZOOMS.join(", ")} percent (the flat 2D view ignores it); a passage's zoom works in both views.`,
+  `- Camera angle: cameraTilt (${CAMERA_TILTS[0]} to ${CAMERA_TILTS.at(-1)} degrees above the board in steps of 5, 40 is standard) and cameraRotation (${CAMERA_ROTATIONS[0]} to ${CAMERA_ROTATIONS.at(-1)} degrees in steps of 5, negative is left) apply to the 3D pen view only.`,
   `- Link size: a project link holds at most ${MAX_RECIPE_LINK_CHARS} encoded characters, about 1 MiB of typical code; photo paintings use a smaller budget and drop their finest strokes to fit.`,
   `- ${EXPORT_RULES}`,
   `- Drawings: SVG path data, drawn as pen lines in path order (fills are ignored); inks ${DRAW_COLOR_KEYS.join(", ")} or #rrggbb.`,
@@ -69,6 +72,13 @@ const segmentSchema = z.object({
   pauseAfter: z.number().min(SEGMENT_LIMITS.pauseAfter[0]).max(SEGMENT_LIMITS.pauseAfter[1]).optional().describe("Seconds the pen holds after the passage, 0 to 3."),
   zoom: z.number().min(SEGMENT_LIMITS.zoom[0]).max(SEGMENT_LIMITS.zoom[1]).optional().describe("Camera punch-in multiplier while this passage is written: 1 (none) to 2.5. Not the same as the video's cameraZoom."),
 });
+
+/** A union of numeric literals: clients see the allowed values as a list. */
+function literalUnion<const T extends readonly number[]>(values: T) {
+  return z.union(
+    values.map((v) => z.literal(v)) as unknown as [z.ZodLiteral<T[number]>, z.ZodLiteral<T[number]>, ...z.ZodLiteral<T[number]>[]],
+  );
+}
 
 const createVideoShape = {
   text: z.string().min(1).describe("The code or text to draw, exactly as it should appear."),
@@ -121,6 +131,12 @@ const createVideoShape = {
     .union([z.literal(75), z.literal(100), z.literal(125), z.literal(150), z.literal(175), z.literal(200)])
     .optional()
     .describe(`Camera framing of the 3D pen view (its preview and its export) in percent: ${CAMERA_ZOOMS.join(", ")}; 75 shows the most board, 200 follows the pen closest. The flat 2D view ignores it. Not the same as a passage's zoom.`),
+  cameraTilt: literalUnion(CAMERA_TILTS)
+    .optional()
+    .describe(`Camera angle above the board in degrees: ${CAMERA_TILTS.join(", ")}. 40 is the standard view, lower is flatter and shows more depth, 90 looks straight down. Applies to the 3D pen view only (its preview and its export); the flat 2D view ignores it.`),
+  cameraRotation: literalUnion(CAMERA_ROTATIONS)
+    .optional()
+    .describe(`Camera rotation around the board in degrees: ${CAMERA_ROTATIONS.join(", ")}. 0 looks straight on, negative moves the camera to the left of the board, positive to the right. Applies to the 3D pen view only (its preview and its export); the flat 2D view ignores it.`),
   locale: z
     .enum(Object.keys(LOCALE_PATH_PREFIXES) as [keyof typeof LOCALE_PATH_PREFIXES, ...(keyof typeof LOCALE_PATH_PREFIXES)[]])
     .optional()
@@ -142,6 +158,8 @@ const SETTING_KEYS = [
   "pattern",
   "density",
   "cameraZoom",
+  "cameraTilt",
+  "cameraRotation",
 ] as const satisfies readonly (keyof LinkSettings)[];
 
 const localeSchema = createVideoShape.locale;
@@ -176,6 +194,8 @@ const createDrawingShape = {
   pattern: createVideoShape.pattern,
   density: createVideoShape.density,
   cameraZoom: createVideoShape.cameraZoom,
+  cameraTilt: createVideoShape.cameraTilt,
+  cameraRotation: createVideoShape.cameraRotation,
   locale: localeSchema,
 };
 
@@ -195,6 +215,8 @@ const paintImageShape = {
   pattern: createVideoShape.pattern,
   density: createVideoShape.density,
   cameraZoom: createVideoShape.cameraZoom,
+  cameraTilt: createVideoShape.cameraTilt,
+  cameraRotation: createVideoShape.cameraRotation,
   locale: localeSchema,
 };
 
@@ -214,7 +236,7 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
       description:
         "Turns code or text into a Todrawn Scribe project: a video of a pen writing it out by hand. " +
         "Returns a link that opens the Scribe studio with the project loaded, where the person previews it and exports the MP4. " +
-        "Optional segments give chosen passages their own speed, size, pen, pause or zoom; pattern, density and cameraZoom set the board and camera. " +
+        "Optional segments give chosen passages their own speed, size, pen, pause or zoom; pattern and density set the board; cameraZoom, cameraTilt and cameraRotation set the 3D camera. " +
         "Give the link to the person; do not try to download a video from it. " +
         EXPORT_RULES,
       inputSchema: createVideoShape,
@@ -265,7 +287,7 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
       title: "Create a Todrawn Scribe drawing video",
       description:
         "Turns a line drawing, given as SVG paths, into a Todrawn Scribe Draw project: a video of a pen drawing it stroke by stroke. " +
-        "Describe the subject as outlines and details, not filled shapes. Board pattern, density and cameraZoom are optional. " +
+        "Describe the subject as outlines and details, not filled shapes. Board pattern, density and the 3D camera (cameraZoom, cameraTilt, cameraRotation) are optional. " +
         "Returns a link that opens the Scribe studio with the drawing loaded, where the person previews it and exports the MP4. " +
         EXPORT_RULES,
       inputSchema: createDrawingShape,
@@ -286,6 +308,8 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
             pattern: args.pattern,
             density: args.density,
             cameraZoom: args.cameraZoom,
+            cameraTilt: args.cameraTilt,
+            cameraRotation: args.cameraRotation,
           },
           locale: args.locale,
           baseUrl: options.baseUrl,
@@ -337,6 +361,8 @@ export function createScribeServer(options: { baseUrl?: string; board?: BoardToo
           pattern: args.pattern,
           density: args.density,
           cameraZoom: args.cameraZoom,
+          cameraTilt: args.cameraTilt,
+          cameraRotation: args.cameraRotation,
           locale: args.locale,
           baseUrl: options.baseUrl,
         });

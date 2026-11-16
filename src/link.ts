@@ -2,6 +2,8 @@ import { deflateRawSync } from "node:zlib";
 import {
   type Aspect,
   type BOARD_PATTERNS,
+  type CAMERA_ROTATIONS,
+  type CAMERA_TILTS,
   type CAMERA_ZOOMS,
   type Language,
   type Locale,
@@ -77,6 +79,8 @@ export function resolveLanguage(value: string | undefined): Language {
 
 type BoardPattern = (typeof BOARD_PATTERNS)[number];
 type CameraZoom = (typeof CAMERA_ZOOMS)[number];
+type CameraTilt = (typeof CAMERA_TILTS)[number];
+type CameraRotation = (typeof CAMERA_ROTATIONS)[number];
 
 export interface LinkSettings {
   background?: "dark" | "paper";
@@ -95,6 +99,10 @@ export interface LinkSettings {
   density?: number;
   /** Camera framing percentage. */
   cameraZoom?: CameraZoom;
+  /** Camera angle above the board, 20 to 90 in steps of 5; 3D pen view only. */
+  cameraTilt?: CameraTilt;
+  /** Camera rotation in degrees, -45 (left) to 45 (right); 3D pen view only. */
+  cameraRotation?: CameraRotation;
 }
 
 export interface LinkInput {

@@ -46,6 +46,12 @@ export const BOARD_PATTERNS = ["dots", "lines", "grid", "staff", "vertical", "bl
 export const PATTERN_DENSITY = { min: 16, max: 192, step: 2 } as const;
 /** Camera framing percentages (lib/scribe/settings.ts SCRIBE_CAMERA_ZOOMS). */
 export const CAMERA_ZOOMS = [75, 100, 125, 150, 175, 200] as const;
+/** Camera angle above the board in nominal degrees; 40 is the classic rig (lib/scribe/settings.ts SCRIBE_CAMERA_TILTS). */
+export const CAMERA_TILTS = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90] as const;
+/** Camera rotation around the board in degrees, negative to the left (lib/scribe/settings.ts SCRIBE_CAMERA_ROTATIONS). */
+export const CAMERA_ROTATIONS = [
+  -45, -40, -35, -30, -25, -20, -15, -10, -5, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45,
+] as const;
 /** Per-passage segment ranges (lib/scribe/segments.ts SEGMENT_LIMITS, MAX_SEGMENTS). */
 export const SEGMENT_LIMITS = {
   speed: [0.5, 2],

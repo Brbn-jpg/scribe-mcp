@@ -51,6 +51,16 @@ test("never emits non-finite coordinates (#470)", () => {
   assert.throws(() => buildDrawingLink({ paths: [{ d: "M 0 0 L 1e308 1e308 L -1e308 -1e308" }] }));
 });
 
+test("emits the camera tilt and rotation only when set", () => {
+  const paths = [{ d: "M0 0 L100 100" }];
+  assert.equal(decode(buildDrawingLink({ paths }).url).settings, undefined);
+  assert.deepEqual(decode(buildDrawingLink({ paths, settings: { cameraTilt: 60 } }).url).settings, { cameraTilt: 60 });
+  assert.deepEqual(
+    decode(buildDrawingLink({ paths, settings: { cameraTilt: 90, cameraRotation: -45 } }).url).settings,
+    { cameraTilt: 90, cameraRotation: -45 },
+  );
+});
+
 test("emits pattern, density and camera zoom only when set", () => {
   const paths = [{ d: "M0 0 L100 100" }];
   assert.equal(decode(buildDrawingLink({ paths }).url).settings, undefined);

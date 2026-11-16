@@ -56,6 +56,18 @@ test("rejects missing and unsupported files with readable errors", async () => {
   await assert.rejects(readImage(join(dir, "pic.webp")), /Only PNG and JPEG/);
 });
 
+test("paintToLink emits the camera tilt and rotation only when set", () => {
+  const settings = (input: object) =>
+    JSON.parse(inflateRawSync(Buffer.from(paintToLink(sampleImage(), { detail: "low", ...input }).url.split("#r=")[1]!, "base64url")).toString("utf8")).settings;
+  assert.deepEqual(settings({ cameraTilt: 30, cameraRotation: 15 }), {
+    background: "paper",
+    pen: "fineliner",
+    cameraTilt: 30,
+    cameraRotation: 15,
+  });
+  assert.deepEqual(settings({ cameraRotation: 0 }), { background: "paper", pen: "fineliner", cameraRotation: 0 });
+});
+
 test("paintToLink emits pattern, density and camera zoom only when set", () => {
   const settings = (input: object) =>
     JSON.parse(inflateRawSync(Buffer.from(paintToLink(sampleImage(), { detail: "low", ...input }).url.split("#r=")[1]!, "base64url")).toString("utf8")).settings;

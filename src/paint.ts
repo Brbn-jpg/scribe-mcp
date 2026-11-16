@@ -12,6 +12,8 @@ export interface PaintLinkInput {
   pattern?: LinkSettings["pattern"];
   density?: number;
   cameraZoom?: LinkSettings["cameraZoom"];
+  cameraTilt?: LinkSettings["cameraTilt"];
+  cameraRotation?: LinkSettings["cameraRotation"];
   locale?: Locale;
   baseUrl?: string;
   /** Link cap override for tests; defaults to MAX_PAINT_LINK_CHARS so painted links stay as small as before. */
@@ -44,6 +46,8 @@ export function paintToLink(image: RgbImage, input: PaintLinkInput = {}): Painte
     pattern: input.pattern,
     density: input.density,
     cameraZoom: input.cameraZoom,
+    cameraTilt: input.cameraTilt,
+    cameraRotation: input.cameraRotation,
   };
   let keep = all.length;
   for (;;) {

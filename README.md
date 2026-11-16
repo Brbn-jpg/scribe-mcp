@@ -45,9 +45,9 @@ Then ask, for example: "Make a vertical Scribe video of the function I just wrot
 
 | Tool | What it does |
 |---|---|
-| `scribe_create_video` | Takes `text` and optionally `language`, `aspect`, look and pacing settings (including board `pattern`, `density` and `cameraZoom`), `segments` and `locale`. Returns the studio link. |
-| `scribe_create_drawing` | Takes `paths` (SVG path data plus an optional ink colour each) and optionally `viewBox`, `aspect`, look settings (including `pattern`, `density` and `cameraZoom`) and `locale`. Curves and arcs are flattened; the pen draws the paths in order. Returns the studio link. |
-| `scribe_paint_image` | Takes `imagePath` (a local PNG or JPEG) and optionally `aspect`, `detail` (low, medium, high), `pen`, `background`, `speedMultiplier`, `pattern`, `density`, `cameraZoom` and `locale`. Paints the photo into up to ~2800 coloured strokes (an underpaint, then detail) and returns the studio link. |
+| `scribe_create_video` | Takes `text` and optionally `language`, `aspect`, look and pacing settings (including board `pattern`, `density` and the 3D camera `cameraZoom`, `cameraTilt` and `cameraRotation`), `segments` and `locale`. Returns the studio link. |
+| `scribe_create_drawing` | Takes `paths` (SVG path data plus an optional ink colour each) and optionally `viewBox`, `aspect`, look settings (including `pattern`, `density` and the 3D camera `cameraZoom`, `cameraTilt` and `cameraRotation`) and `locale`. Curves and arcs are flattened; the pen draws the paths in order. Returns the studio link. |
+| `scribe_paint_image` | Takes `imagePath` (a local PNG or JPEG) and optionally `aspect`, `detail` (low, medium, high), `pen`, `background`, `speedMultiplier`, `pattern`, `density`, `cameraZoom`, `cameraTilt`, `cameraRotation` and `locale`. Paints the photo into up to ~2800 coloured strokes (an underpaint, then detail) and returns the studio link. |
 | `scribe_limits` | Lists input limits and what the Free and Premium plans allow. |
 | `todrawn_login` | Signs the agent in to your Todrawn account (device flow, see Boards). If already signed in, says as whom. |
 | `todrawn_logout` | Revokes the agent's token and deletes it from this machine. |
@@ -69,7 +69,7 @@ Then ask, for example: "Make a vertical Scribe video of the function I just wrot
 
 The server converts the selection to character offsets over the text as the studio sees it (line endings normalised to LF), so the agent never has to count. Where passages overlap, the later one wins. A passage that cannot be found, an empty selection or an out-of-range value comes back as a tool error that names the passage.
 
-`pattern` (dots, lines, grid, staff, vertical, blank) and `density` (the spacing of its marks, 16 to 192, even numbers) set the board surface. `cameraZoom` (75, 100, 125, 150, 175 or 200) frames the 3D pen view, in its preview and its export; the flat 2D view ignores it, and it is separate from a passage's `zoom`, which works in both views. All three work on text, drawing and photo links.
+`pattern` (dots, lines, grid, staff, vertical, blank) and `density` (the spacing of its marks, 16 to 192, even numbers) set the board surface. `cameraZoom` (75, 100, 125, 150, 175 or 200) frames the 3D pen view, in its preview and its export; the flat 2D view ignores it, and it is separate from a passage's `zoom`, which works in both views. `cameraTilt` (20 to 90 degrees above the board in steps of 5; 40 is the standard view, 90 looks straight down) and `cameraRotation` (-45 to 45 degrees in steps of 5; negative moves the camera to the left, positive to the right, 0 looks straight on) angle that same 3D camera, and the flat 2D view ignores both. All of them work on text, drawing and photo links.
 
 Link size: a link holds at most 400,000 encoded characters, about 1 MiB of typical code. Photo paintings keep a smaller budget of 120,000 characters and drop their finest strokes to fit.
 
