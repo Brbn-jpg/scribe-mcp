@@ -69,6 +69,8 @@ Then ask, for example: "Make a vertical Scribe video of the function I just wrot
 
 The server converts the selection to character offsets over the text as the studio sees it (line endings normalised to LF), so the agent never has to count. Where passages overlap, the later one wins. A passage that cannot be found, an empty selection or an out-of-range value comes back as a tool error that names the passage.
 
+`pen` (ballpoint, marker, fineliner, pencil, chalk) picks the writing tool for the whole video, and a passage may pick its own. Chalk draws a grainy chalk line with a chalk stick in the 3D view and is meant for `background: "dark"`.
+
 `pattern` (dots, lines, grid, staff, vertical, blank) and `density` (the spacing of its marks, 16 to 192, even numbers) set the board surface. `cameraZoom` (75, 100, 125, 150, 175 or 200) frames the 3D pen view, in its preview and its export; the flat 2D view ignores it, and it is separate from a passage's `zoom`, which works in both views. `cameraTilt` (20 to 90 degrees above the board in steps of 5; 40 is the standard view, 90 looks straight down) and `cameraRotation` (-45 to 45 degrees in steps of 5; negative moves the camera to the left, positive to the right, 0 looks straight on) angle that same 3D camera, and the flat 2D view ignores both. All of them work on text, drawing and photo links.
 
 `resolution` (720p, 1080p or 2160p) and `fps` (24, 30 or 60) are optional on text and drawing links. 2160p and 60 fps need a Premium plan: the link keeps them, and on other plans the studio exports at 1080p and 30 fps instead, and says so.

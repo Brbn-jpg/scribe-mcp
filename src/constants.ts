@@ -40,7 +40,7 @@ export const MAX_PAINT_LINK_CHARS = 120_000;
 export const MAX_RECIPE_LINK_JSON_BYTES = MAX_INPUT_BYTES + 64 * 1024;
 
 /** Settings ranges a link may set (lib/scribe/settings.ts validateScribeSettings). */
-export const PENS = ["ballpoint", "marker", "fineliner", "pencil"] as const;
+export const PENS = ["ballpoint", "marker", "fineliner", "pencil", "chalk"] as const;
 export const BACKGROUNDS = ["dark", "paper"] as const;
 export const COLOR_MODES = ["syntax", "solid"] as const;
 export const TIMINGS = ["reading", "pen"] as const;

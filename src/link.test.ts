@@ -123,3 +123,14 @@ test("rejects bad segments with the segment number and a hint", () => {
     /Too many segments/,
   );
 });
+
+test("carries the chalk pen, for the whole video and for one passage", () => {
+  const link = buildRecipeLink({
+    text: "alpha\nbeta",
+    settings: { background: "dark", pen: "chalk" },
+    segments: [{ match: "beta", pen: "chalk" }],
+  });
+  const payload = decode(link.url) as { settings: { pen: string }; segments: { pen: string }[] };
+  assert.equal(payload.settings.pen, "chalk");
+  assert.equal(payload.segments[0]?.pen, "chalk");
+});

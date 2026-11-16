@@ -88,7 +88,7 @@ export interface LinkSettings {
   background?: "dark" | "paper";
   colorMode?: "syntax" | "solid";
   solidColor?: string;
-  pen?: "ballpoint" | "marker" | "fineliner" | "pencil";
+  pen?: "ballpoint" | "marker" | "fineliner" | "pencil" | "chalk";
   timing?: "reading" | "pen";
   readingWps?: number;
   speedMultiplier?: number;

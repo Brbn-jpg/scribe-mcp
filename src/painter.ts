@@ -15,7 +15,7 @@
 
 import type { Aspect } from "./constants.ts";
 
-export type Pen = "ballpoint" | "marker" | "fineliner" | "pencil";
+export type Pen = "ballpoint" | "marker" | "fineliner" | "pencil" | "chalk";
 export type Detail = "low" | "medium" | "high";
 
 /** Planar RGB in 0..1. */
@@ -56,6 +56,7 @@ export const PEN_STYLE: Record<Pen, { width: number; alpha: number }> = {
   marker: { width: 16, alpha: 0.78 },
   fineliner: { width: 5, alpha: 0.95 },
   pencil: { width: 7, alpha: 0.62 },
+  chalk: { width: 13, alpha: 0.9 },
 };
 
 /** Artboard size per aspect in Draw units (DRAW_CANVAS_LONG_EDGE_PX = 960). */

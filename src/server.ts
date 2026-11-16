@@ -40,7 +40,7 @@ import { AuthManager } from "./auth.ts";
 import { registerBoardTools, type BoardToolsDeps } from "./board-tools.ts";
 import { configFromEnv, TodrawnApi } from "./todrawn-api.ts";
 
-export const SERVER_VERSION = "0.5.0";
+export const SERVER_VERSION = "0.6.0";
 const MAX_DRAWING_PATHS = 2000;
 
 const EXPORT_RULES =
@@ -72,7 +72,7 @@ const segmentSchema = z.object({
   toLine: z.number().int().min(1).optional().describe("The last line, inclusive. Defaults to fromLine."),
   speed: z.number().min(SEGMENT_LIMITS.speed[0]).max(SEGMENT_LIMITS.speed[1]).optional().describe("Writing speed for this passage: 0.5 slower to 2 faster."),
   size: z.number().min(SEGMENT_LIMITS.size[0]).max(SEGMENT_LIMITS.size[1]).optional().describe("Glyph size for this passage: 0.6 smaller to 2 larger."),
-  pen: z.enum(PENS).optional().describe("Pen that writes this passage."),
+  pen: z.enum(PENS).optional().describe("Pen that writes this passage: ballpoint, marker, fineliner, pencil or chalk (a grainy chalk line, meant for background: \"dark\")."),
   pauseAfter: z.number().min(SEGMENT_LIMITS.pauseAfter[0]).max(SEGMENT_LIMITS.pauseAfter[1]).optional().describe("Seconds the pen holds after the passage, 0 to 3."),
   zoom: z.number().min(SEGMENT_LIMITS.zoom[0]).max(SEGMENT_LIMITS.zoom[1]).optional().describe("Camera punch-in multiplier while this passage is written: 1 (none) to 2.5. Not the same as the video's cameraZoom."),
 });
@@ -95,7 +95,7 @@ const createVideoShape = {
     .optional()
     .describe("landscape 16:9 (default), portrait 9:16 for Shorts/Reels/TikTok, square 1:1, feed 4:5."),
   background: z.enum(BACKGROUNDS).optional().describe("dark board or light paper."),
-  pen: z.enum(PENS).optional(),
+  pen: z.enum(PENS).optional().describe("Pen for the whole video: ballpoint (default), marker, fineliner, pencil or chalk. Chalk draws a grainy chalk line and is meant for background: \"dark\"."),
   colorMode: z.enum(COLOR_MODES).optional().describe("syntax colours per token, or one solid ink colour."),
   solidColor: z
     .string()
@@ -218,7 +218,7 @@ const paintImageShape = {
     .enum(["low", "medium", "high"])
     .optional()
     .describe("Stroke budget: low ~1200 strokes, medium ~2000 (default), high ~2800. More detail is more faithful and plays longer."),
-  pen: createVideoShape.pen.describe("Pen width shapes the painting: fineliner (default) is the finest, marker the boldest."),
+  pen: createVideoShape.pen.describe("Pen width shapes the painting: fineliner (default) is the finest, marker the boldest. Chalk draws a grainy chalk line and is meant for background: \"dark\"."),
   background: createVideoShape.background,
   speedMultiplier: createVideoShape.speedMultiplier,
   pattern: createVideoShape.pattern,
