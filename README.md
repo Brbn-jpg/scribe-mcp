@@ -71,6 +71,8 @@ The server converts the selection to character offsets over the text as the stud
 
 `pattern` (dots, lines, grid, staff, vertical, blank) and `density` (the spacing of its marks, 16 to 192, even numbers) set the board surface. `cameraZoom` (75, 100, 125, 150, 175 or 200) frames the 3D pen view, in its preview and its export; the flat 2D view ignores it, and it is separate from a passage's `zoom`, which works in both views. `cameraTilt` (20 to 90 degrees above the board in steps of 5; 40 is the standard view, 90 looks straight down) and `cameraRotation` (-45 to 45 degrees in steps of 5; negative moves the camera to the left, positive to the right, 0 looks straight on) angle that same 3D camera, and the flat 2D view ignores both. All of them work on text, drawing and photo links.
 
+`resolution` (720p, 1080p or 2160p) and `fps` (24, 30 or 60) are optional on text and drawing links. 2160p and 60 fps need a Premium plan: the link keeps them, and on other plans the studio exports at 1080p and 30 fps instead, and says so.
+
 Link size: a link holds at most 400,000 encoded characters, about 1 MiB of typical code. Photo paintings keep a smaller budget of 120,000 characters and drop their finest strokes to fit.
 
 ## Boards
@@ -105,8 +107,8 @@ The board tools do send data: they talk to the Todrawn API with your token. Boar
 
 Previewing is free and needs no account. Exporting needs a free Todrawn account:
 
-- **Free:** 5 exports per UTC day; every video ends with a "Made with Todrawn Scribe" card.
-- **Premium:** unlimited exports; the card is optional.
+- **Free:** 5 exports per UTC day; every video ends with a "Made with Todrawn Scribe" card; up to 1080p at 30 fps.
+- **Premium:** unlimited exports; the card is optional; also 2160p (4K) and 60 fps.
 
 Input is capped at 1 MiB and 5000 lines. Clips are capped at 180 s, and longer text is drawn faster to fit.
 

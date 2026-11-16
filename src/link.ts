@@ -5,8 +5,10 @@ import {
   type CAMERA_ROTATIONS,
   type CAMERA_TILTS,
   type CAMERA_ZOOMS,
+  type FRAME_RATES,
   type Language,
   type Locale,
+  type RESOLUTIONS,
   LANGUAGES,
   LOCALE_PATH_PREFIXES,
   MAX_INPUT_BYTES,
@@ -92,8 +94,9 @@ export interface LinkSettings {
   speedMultiplier?: number;
   markdown?: boolean;
   layout?: "auto" | "scroll" | "pages";
-  resolution?: "720p" | "1080p";
-  fps?: 24 | 30;
+  /** 2160p and 60 fps need a Premium plan: on other plans the studio exports at 1080p and 30 fps instead. */
+  resolution?: (typeof RESOLUTIONS)[number];
+  fps?: (typeof FRAME_RATES)[number];
   pattern?: BoardPattern;
   /** Pattern spacing in reference-canvas pixels, even, 16 to 192. */
   density?: number;

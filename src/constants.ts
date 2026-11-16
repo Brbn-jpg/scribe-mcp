@@ -19,8 +19,15 @@ export const MAX_INPUT_BYTES = 1024 * 1024;
 export const MAX_LINES = 5000;
 export const MAX_PLAYBACK_SECONDS = 180;
 export const FREE_EXPORTS_PER_DAY = 5;
-export const RESOLUTIONS = ["720p", "1080p"] as const;
-export const FRAME_RATES = [24, 30] as const;
+export const RESOLUTIONS = ["720p", "1080p", "2160p"] as const;
+export const FRAME_RATES = [24, 30, 60] as const;
+/** The part of those lists that needs a Premium plan (lib/scribe/presets.ts PREMIUM_RESOLUTIONS, PREMIUM_FRAME_RATES).
+ *  On other plans the studio exports at 1080p and 30 fps instead; the stored setting is kept. */
+export const PREMIUM_RESOLUTIONS = ["2160p"] as const;
+export const PREMIUM_FRAME_RATES = [60] as const;
+/** What every plan may export: the lists without their premium part. */
+export const FREE_RESOLUTIONS = RESOLUTIONS.filter((r) => !(PREMIUM_RESOLUTIONS as readonly string[]).includes(r));
+export const FREE_FRAME_RATES = FRAME_RATES.filter((f) => !(PREMIUM_FRAME_RATES as readonly number[]).includes(f));
 
 /** Link format (lib/scribe/recipe-link.ts). */
 export const RECIPE_LINK_VERSION = 1;

@@ -181,3 +181,37 @@ test("scribe_limits mentions segments, patterns, camera and the link size", asyn
   assert.match(limits, /cameraRotation/);
   assert.match(limits, /400000 encoded characters/);
 });
+
+test("scribe_create_video carries 2160p and 60 fps in the link and says they need Premium", async () => {
+  const client = await connect();
+  const result = await client.callTool({
+    name: "scribe_create_video",
+    arguments: { text: "hi", resolution: "2160p", fps: 60 },
+  });
+  assert.notEqual(result.isError, true);
+  const url = text(result).match(/https:\/\/example\.test\/scribe#r=[A-Za-z0-9_-]+/)?.[0] ?? "";
+  const payload = JSON.parse(inflateRawSync(Buffer.from(new URL(url).hash.replace(/^#r=/, ""), "base64url")).toString("utf8"));
+  assert.equal(payload.settings.resolution, "2160p");
+  assert.equal(payload.settings.fps, 60);
+  assert.match(text(result), /Premium/);
+  assert.match(text(result), /2160p \(4K\) and 60 fps/);
+});
+
+test("scribe_create_video rejects a resolution or frame rate the studio does not have", async () => {
+  const client = await connect();
+  for (const bad of [{ resolution: "4k" }, { fps: 50 }]) {
+    const result = await client.callTool({ name: "scribe_create_video", arguments: { text: "x", ...bad } });
+    assert.equal(result.isError, true);
+  }
+});
+
+test("scribe_limits and the tool schema state which output needs Premium", async () => {
+  const client = await connect();
+  const limits = text(await client.callTool({ name: "scribe_limits", arguments: {} }));
+  assert.match(limits, /720p or 1080p, 24 or 30 fps/);
+  assert.match(limits, /2160p and 60 fps need a Premium plan; on other plans the studio exports at 1080p and 30 fps instead/);
+  const { tools } = await client.listTools();
+  const schema = JSON.stringify(tools.find((t) => t.name === "scribe_create_video")?.inputSchema);
+  assert.match(schema, /2160p/);
+  assert.match(schema, /needs a Premium plan/);
+});

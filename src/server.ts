@@ -8,6 +8,8 @@ import {
   CAMERA_TILTS,
   CAMERA_ZOOMS,
   COLOR_MODES,
+  FREE_FRAME_RATES,
+  FREE_RESOLUTIONS,
   FRAME_RATES,
   FREE_EXPORTS_PER_DAY,
   LANGUAGES,
@@ -21,6 +23,8 @@ import {
   DRAW_COLOR_KEYS,
   PATTERN_DENSITY,
   PENS,
+  PREMIUM_FRAME_RATES,
+  PREMIUM_RESOLUTIONS,
   READING_WPS,
   RESOLUTIONS,
   SEGMENT_LIMITS,
@@ -36,19 +40,19 @@ import { AuthManager } from "./auth.ts";
 import { registerBoardTools, type BoardToolsDeps } from "./board-tools.ts";
 import { configFromEnv, TodrawnApi } from "./todrawn-api.ts";
 
-export const SERVER_VERSION = "0.4.0";
+export const SERVER_VERSION = "0.5.0";
 const MAX_DRAWING_PATHS = 2000;
 
 const EXPORT_RULES =
   `Previewing is free and needs no account. Exporting the MP4 needs a free Todrawn account: ` +
   `the Free plan allows ${FREE_EXPORTS_PER_DAY} exports per UTC day and ends each video with a "Made with Todrawn Scribe" card; ` +
-  `Premium has unlimited exports and makes the card optional.`;
+  `Premium has unlimited exports, makes the card optional and also exports 2160p (4K) and 60 fps.`;
 
 const LIMITS_TEXT = [
   "Todrawn Scribe limits:",
   `- Input: up to ${MAX_INPUT_BYTES} bytes (1 MiB) and ${MAX_LINES} lines of text or code.`,
   `- Playback: clips are capped at ${MAX_PLAYBACK_SECONDS} s; longer documents are drawn faster to fit. A readable clip is a few dozen lines.`,
-  `- Output: ${RESOLUTIONS.join(" or ")}, ${FRAME_RATES.join(" or ")} fps, aspects ${ASPECTS.join(", ")} (feed = 4:5).`,
+  `- Output: ${FREE_RESOLUTIONS.join(" or ")}, ${FREE_FRAME_RATES.join(" or ")} fps, aspects ${ASPECTS.join(", ")} (feed = 4:5). ${PREMIUM_RESOLUTIONS.join(", ")} and ${PREMIUM_FRAME_RATES.join(", ")} fps need a Premium plan; on other plans the studio exports at 1080p and 30 fps instead.`,
   `- Languages with syntax colours: ${LANGUAGES.filter((l) => l !== "plain").join(", ")}; "plain" draws prose and supports a Markdown subset (headings, **bold**, lists, ==highlight==).`,
   `- Passages: "segments" give a passage of a video its own speed (${SEGMENT_LIMITS.speed.join(" to ")}), glyph size (${SEGMENT_LIMITS.size.join(" to ")}), pen, pause after it (${SEGMENT_LIMITS.pauseAfter.join(" to ")} s) or camera punch-in (${SEGMENT_LIMITS.zoom.join(" to ")}x). Select a passage with "match" (an exact substring, optional "occurrence") or "fromLine"/"toLine" (1-based, inclusive); at most ${MAX_SEGMENTS}. Later passages win where they overlap.`,
   `- Board: pattern ${BOARD_PATTERNS.join(", ")}; density is the spacing of the marks, ${PATTERN_DENSITY.min} to ${PATTERN_DENSITY.max}, even numbers.`,
@@ -109,8 +113,13 @@ const createVideoShape = {
   speedMultiplier: z.number().min(SPEED.min).max(SPEED.max).optional(),
   markdown: z.boolean().optional().describe("Interpret Markdown in plain text (default true)."),
   layout: z.enum(LAYOUTS).optional().describe("auto scrolls tall aspects and pages wide ones."),
-  resolution: z.enum(RESOLUTIONS).optional(),
-  fps: z.union([z.literal(24), z.literal(30)]).optional(),
+  resolution: z
+    .enum(RESOLUTIONS)
+    .optional()
+    .describe(`Export resolution: ${RESOLUTIONS.join(", ")}. ${PREMIUM_RESOLUTIONS.join(", ")} needs a Premium plan; on other plans the studio exports at 1080p instead.`),
+  fps: literalUnion(FRAME_RATES)
+    .optional()
+    .describe(`Export frame rate: ${FRAME_RATES.join(", ")}. ${PREMIUM_FRAME_RATES.join(", ")} needs a Premium plan; on other plans the studio exports at 30 fps instead.`),
   segments: z
     .array(segmentSchema)
     .max(MAX_SEGMENTS)
