@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.todrawn/scribe",
+  "title": "Todrawn Scribe",
+  "description": "Turns code, text, SVG drawings or photos into hand-drawn video projects, plus Todrawn board tools.",
+  "websiteUrl": "https://todrawn.com/scribe/mcp",
+  "repository": {
+    "url": "https://github.com/Brbn-jpg/scribe-mcp",
+    "source": "github"
+  },
+  "version": "0.6.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@todrawn/scribe-mcp",
+      "version": "0.6.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
